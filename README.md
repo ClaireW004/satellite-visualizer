@@ -10,11 +10,11 @@
    
 3. Navigate to the MongoDBCompass application on your computer, and click the Add New Connection button.
 
-   <img src="https://github.com/user-attachments/assets/8210825a-1f50-475e-8fa3-61504fd94f87" width="250"/>
+   <img src="https://github.com/user-attachments/assets/8210825a-1f50-475e-8fa3-61504fd94f87" width="350"/>
    
 5. Enter the connection string (ask Claire for db_password and replace, delete brackets): mongodb+srv://TeamTech:<db_password>@cluster0.5qgsy.mongodb.net/
 
-   <img src="https://github.com/user-attachments/assets/6729de1c-ad6d-48c2-b5ba-815e7a40b098" width="250"/>
+   <img src="https://github.com/user-attachments/assets/6729de1c-ad6d-48c2-b5ba-815e7a40b098" width="350"/>
    
 7. Click Save and Connect.
 
