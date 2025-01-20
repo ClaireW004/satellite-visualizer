@@ -8,11 +8,11 @@
    
    ![image](https://github.com/user-attachments/assets/115d8910-2c2a-4b16-b072-d188f0c10f5c)
    
-3. Navigate to the MongoDBCompass application on your computer, and click the Add New Connection button.
+3. Navigate to the MongoDBCompass application on your computer, and click the **Add New Connection** button.
 
    <img src="https://github.com/user-attachments/assets/8210825a-1f50-475e-8fa3-61504fd94f87" width="350"/>
    
-5. Enter the connection string (ask Claire for db_password and replace, delete brackets): mongodb+srv://TeamTech:<db_password>@cluster0.5qgsy.mongodb.net/
+5. Enter the connection string (ask Claire for db_password and replace, delete brackets): **mongodb+srv://TeamTech:<db_password>@cluster0.5qgsy.mongodb.net/**
 
    <img src="https://github.com/user-attachments/assets/6729de1c-ad6d-48c2-b5ba-815e7a40b098" width="350"/>
    
@@ -26,7 +26,7 @@
    
 
 ### Run the Backend
-7. Open IntelliJ on your computer, and click "New Project" on the Welcome screen. Navigate to the location where the satellite-visualizer was cloned, and click on **satellitevisualizer-backend** then OK.
+7. Open IntelliJ on your computer, and click **New Project** on the Welcome screen. Navigate to the location where the satellite-visualizer was cloned, and click on **satellitevisualizer-backend** then OK.
 
    ![image](https://github.com/user-attachments/assets/4915f6c8-9e5f-4076-9faa-8bd7dad16395)
    
