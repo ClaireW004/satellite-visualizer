@@ -28,6 +28,27 @@
   color: #61dafb;
 }
 
+.app-container {
+  display: flex;
+  height: 100vh; /* Full height of the viewport */
+}
+
+.sidebar {
+  flex: 1; /* Take up half the screen width */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background-color: #ffffff;
+  overflow-y: auto; /* Enable scrolling if content exceeds height */
+}
+
+.viewer-container {
+  flex: 4; /* Take up the other half of the screen width */
+  height: 100%;
+}
+
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);
