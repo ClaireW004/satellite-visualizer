@@ -30,22 +30,22 @@
 
 .app-container {
   display: flex;
-  height: 100vh; /* Full height of the viewport */
+  height: 100vh;
 }
 
 .sidebar {
-  flex: 1; /* Take up half the screen width */
+  flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   padding: 20px;
   background-color: #ffffff;
-  overflow-y: auto; /* Enable scrolling if content exceeds height */
+  overflow-y: auto;
 }
 
 .viewer-container {
-  flex: 4; /* Take up the other half of the screen width */
+  flex: 4;
   height: 100%;
 }
 

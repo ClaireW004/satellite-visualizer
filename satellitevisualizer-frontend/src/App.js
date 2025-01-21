@@ -42,12 +42,8 @@ const App = () => {
             </div>
             <div className="viewer-container">
                 <Viewer ref={viewer} homeButton={false}>
-                    {/* <button
-                        onClick={() => {
-                            viewer.current.cesiumElement.camera.flyHome();
-                        }}>
-                        Home
-                    </button> */}
+                    {/* Add other Cesium components here
+                    */}
                 </Viewer>
             </div>
         </div>
