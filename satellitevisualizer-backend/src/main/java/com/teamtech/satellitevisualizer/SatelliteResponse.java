@@ -17,7 +17,7 @@ public class SatelliteResponse {
     public static class Info {
         private int satid;
         private String satname;
-        private int transactionCount;
+        private int transactionscount;
 
         public int getSatid() { return satid; }
         public void setSatid(int satid) { this.satid = satid; }
@@ -25,8 +25,8 @@ public class SatelliteResponse {
         public String getSatname() { return satname; }
         public void setSatname(String satname) { this.satname = satname; }
 
-        public int getTransactionCount() { return transactionCount; }
-        public void setTransactionCount(int transactionCount) { this.transactionCount = transactionCount; }
+        public int getTransactionscount() { return transactionscount; }
+        public void setTransactionscount(int transactionscount) { this.transactionscount = transactionscount; }
     }
 
     public Info getInfo() { return info; }
