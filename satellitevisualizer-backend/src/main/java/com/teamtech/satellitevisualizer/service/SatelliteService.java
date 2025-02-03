@@ -6,10 +6,14 @@ It contains methods to fetch TLE data from the API and optionally save it to the
 @Autowired annotation is used for dependency injection for SatelliteRepository interface.
  */
 
-package com.teamtech.satellitevisualizer;
+package com.teamtech.satellitevisualizer.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.teamtech.satellitevisualizer.models.SatelliteData;
+import com.teamtech.satellitevisualizer.repository.SatelliteRepository;
+import com.teamtech.satellitevisualizer.controller.SatelliteResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.ResponseEntity;
@@ -19,8 +23,8 @@ public class SatelliteService {
 
     // Base URL for the N2YO API to fetch the TLE data
     private final String BASE_URL = "https://api.n2yo.com/rest/v1/satellite/tle/";
-    // Replace with your api key by signing up for an account at n2yo.com.
-    private final String API_KEY = "YENSUG-T4SP3G-TVPZ5J-5EGD";
+    @Value("${n2yo.api.key}")
+    private String API_KEY;
 
     @Autowired
     private SatelliteRepository satelliteRepository;

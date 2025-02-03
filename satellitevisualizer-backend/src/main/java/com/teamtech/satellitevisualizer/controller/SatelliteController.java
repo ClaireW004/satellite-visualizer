@@ -6,8 +6,10 @@ to fetch and save TLE data to the MongoDB repository.
 @RequestMapping("/api/satellite") is the base URL path for accessing all endpoints in this controller.
  */
 
-package com.teamtech.satellitevisualizer;
+package com.teamtech.satellitevisualizer.controller;
 
+import com.teamtech.satellitevisualizer.models.SatelliteData;
+import com.teamtech.satellitevisualizer.service.SatelliteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,11 +21,6 @@ public class SatelliteController {
 
     @Autowired
     private SatelliteService satelliteService;
-
-    @Autowired
-    public SatelliteController(SatelliteService satelliteService) {
-        this.satelliteService = satelliteService;
-    }
 
     /*
     Fetches and saves TLE data based on its NORAD ID

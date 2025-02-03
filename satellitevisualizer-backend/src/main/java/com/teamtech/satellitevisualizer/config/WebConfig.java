@@ -2,7 +2,7 @@
 WebConfig ensures that the backend allows requests to be made from our frontend application at http://localhost:3000
  */
 
-package com.teamtech.satellitevisualizer;
+package com.teamtech.satellitevisualizer.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;

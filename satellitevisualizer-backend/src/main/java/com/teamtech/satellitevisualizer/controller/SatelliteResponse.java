@@ -2,7 +2,7 @@
 SatelliteResponse represents the response that we get from the N2YO API that has information about the satellite and its TLE.
  */
 
-package com.teamtech.satellitevisualizer;
+package com.teamtech.satellitevisualizer.controller;
 
 public class SatelliteResponse {
 

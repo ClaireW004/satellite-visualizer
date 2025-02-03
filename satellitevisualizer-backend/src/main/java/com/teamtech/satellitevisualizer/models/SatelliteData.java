@@ -9,13 +9,15 @@ The satname is the name of the satellite.
 The tle is the TLE (two-line element) of the satellite represented on a single line string.
  */
 
-package com.teamtech.satellitevisualizer;
+package com.teamtech.satellitevisualizer.models;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+@Data
 @Document(collection = "satellites")
 @AllArgsConstructor
 @NoArgsConstructor
