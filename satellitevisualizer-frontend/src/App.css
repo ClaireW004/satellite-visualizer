@@ -34,15 +34,33 @@
 }
 
 .sidebar {
+
   flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   padding: 20px;
-  background-color: #ffffff;
+  background-color: #232730;
   overflow-y: auto;
 }
+
+.sidebar-logo {
+  margin-left: 90px;
+  transform: rotate(280deg);
+  width: 150px; /* Match the font size of the title */
+  height: auto; /* Maintain aspect ratio */
+}
+.sidebar h1 {
+  font-size: 75px;
+  writing-mode: horizontal-tb; /* Rotates text from top to bottom */
+  text-orientation: upright; /* Keeps letters upright */
+  transform: rotate(270deg); /* Flips the text if needed */
+  text-align: center;
+  color: white;
+  margin-bottom: 40px;
+}
+
 
 .viewer-container {
   flex: 4;

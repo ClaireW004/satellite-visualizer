@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Viewer } from 'resium';
 import TLEDisplay from './components/TLEDisplay';
+import logo from './cesiumLogo.png';
 import './App.css';
 import * as Cesium from 'cesium';
 
@@ -28,7 +29,10 @@ const App = () => {
     return (
         <div className="app-container">
             <div className="sidebar">
-                <h1>Satellite Visualizer</h1>
+                <div className="logo-title">
+                    <h1 >SATELLITE VISUALIZER</h1>
+                    <img src={logo} alt="Logo" className="sidebar-logo" />
+                </div>
                 <form onSubmit={handleSubmit}> 
                     <input 
                         type="text" 
