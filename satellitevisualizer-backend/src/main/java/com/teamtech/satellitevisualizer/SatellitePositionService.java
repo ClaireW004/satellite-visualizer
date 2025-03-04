@@ -15,7 +15,7 @@ public class SatellitePositionService {
          add this, then push it to your branch!
          then, push it to my master branch too :)
          ***/
-        System.out.println("hello from olivia");
+        System.out.println("hello from sydney");
         // push a line with your name!
     }
 
