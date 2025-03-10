@@ -12,11 +12,32 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.teamtech.satellitevisualizer.models.SatelliteData;
 import com.teamtech.satellitevisualizer.repository.SatelliteRepository;
 import com.teamtech.satellitevisualizer.controller.SatelliteResponse;
+import org.hipparchus.ode.events.Action;
+import org.hipparchus.util.FastMath;
+import org.orekit.bodies.GeodeticPoint;
+import org.orekit.bodies.OneAxisEllipsoid;
+import org.orekit.data.DataContext;
+import org.orekit.data.DataProvidersManager;
+import org.orekit.data.DirectoryCrawler;
+import org.orekit.frames.Frame;
+import org.orekit.frames.FramesFactory;
+import org.orekit.frames.TopocentricFrame;
+import org.orekit.propagation.Propagator;
+import org.orekit.propagation.SpacecraftState;
+import org.orekit.propagation.analytical.tle.SGP4;
+import org.orekit.propagation.analytical.tle.TLE;
+import org.orekit.propagation.events.ElevationDetector;
+import org.orekit.time.AbsoluteDate;
+import org.orekit.utils.Constants;
+import org.orekit.utils.IERSConventions;
+import org.orekit.utils.PVCoordinates;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.ResponseEntity;
+
+import java.io.File;
 
 @Service
 public class SatelliteService {
