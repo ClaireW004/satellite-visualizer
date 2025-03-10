@@ -14,7 +14,7 @@
 }
 
 .App-header {
-  background-color: #232730;
+  background-color: #282c34;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -40,46 +40,8 @@
   justify-content: center;
   align-items: center;
   padding: 20px;
-  background-color: #232730;
+  background-color: #ffffff;
   overflow-y: auto;
-}
-
-
-.input-group {
-  display: flex;
-  align-items: center;
-  width: 90%;
-  border-radius: 18px;
-  overflow: hidden;
-  background-color: white;
-}
-
-
-.sidebar input{
-  background-color:#232730;
-  border-radius: 18px;
-  border: 1.5px solid white;
-  color:white;
-  padding: 18px;
-  border-top-right-radius: 0px; 
-  border-bottom-right-radius: 0px;
-  font-size:80%;
-
-  
-}
-
-input::placeholder { 
-  color: white; 
-} 
-
-.sidebar button {
-  background-color: white;
-  border-radius: 18px;
-  border: none;
-  padding: 18px;
-  font-size:80%;
-  
-  
 }
 
 .viewer-container {
