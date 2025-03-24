@@ -21,19 +21,30 @@
   align-items: center;
   justify-content: center;
   font-size: calc(10px + 2vmin);
-  color: white;
+  color: rgb(241, 241, 241);
 }
 
 .App-link {
   color: #61dafb;
 }
 
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
 .app-container {
   display: flex;
   height: 100vh;
+  width: 100vw;
 }
 
 .sidebar {
+  width: 300px;
+  min-width: 250px;
+  max-width: 350px;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -45,10 +56,16 @@
 }
 
 .viewer-container {
-  flex: 4;
-  height: 100%;
+  flex: 1;
+  height: 100vh;
+  width: 100vw;
+  display: flex;
 }
 
+.viewer-container .cesium-viewer {
+  width: 100%;
+  height: 100%;
+}
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);
