@@ -1,5 +1,6 @@
 package com.teamtech.satellitevisualizer.service;
 
+import com.teamtech.satellitevisualizer.models.SatelliteData;
 import com.teamtech.satellitevisualizer.repository.SatelliteRepository;
 import org.hipparchus.util.FastMath;
 import org.orekit.bodies.GeodeticPoint;
@@ -20,9 +21,12 @@ import org.orekit.utils.Constants;
 import org.orekit.utils.IERSConventions;
 import org.orekit.utils.PVCoordinates;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.aggregation.ArrayOperators;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.ZoneOffset;
 import java.util.Optional;
@@ -33,42 +37,66 @@ public class SatellitePositionService {
     @Autowired
     private SatelliteRepository satelliteRepository;
 
+    private void loadOrekitData() {
+        File orekitData = new File("src/main/resources/orekit-data");
+        DataProvidersManager manager = DataContext.getDefault().getDataProvidersManager();
+        manager.addProvider(new DirectoryCrawler(orekitData));
+    }
+
     // separates a tle string into two lines
     public static Optional<TLE> parseTLE(String tleData) {
         // blank data
         if (tleData == null || tleData.isBlank()) return Optional.empty();
-
+        System.out.println("TLE data" + tleData);
         // splits by newline
-        String[] lines = tleData.split("\n");
-        if (lines.length < 2) return Optional.empty(); // invalid tle
+        String[] lines = tleData.split("\\r?\\n");
+        if (lines.length < 2) {
+            System.out.println("Invalid TLE data: Less than 2 lines");
+            return Optional.empty(); // invalid tle
+        }
 
         String line1 = lines[0].trim();
         String line2 = lines[1].trim();
+        System.out.println("line1: " + line1);
+        System.out.println("line2: " + line2);
 
-        return Optional.of(new TLE(line1, line2));
+        try {
+            return Optional.of(new TLE(line1, line2));
+        } catch (Exception e) {
+            System.out.println("Error creating TLE: " + e.getMessage());
+            return Optional.empty();
+        }
+//        return Optional.of(new TLE(line1, line2));
     }
 
     public Optional<TLE> fetchTLE(int satId) {
-        return satelliteRepository.findById(String.valueOf(satId))
-                .flatMap(sat -> parseTLE(sat.getTle()));
+        System.out.println("satId: " + satId);
+//        return satelliteRepository.findById(String.valueOf(satId))
+//                .flatMap(sat -> parseTLE(sat.getTle()));
+        SatelliteData satelliteData = satelliteRepository.findBySatid(satId);
+        System.out.println("satelliteData: " + satelliteData);
+        Optional<TLE> resTLE = Optional.ofNullable(satelliteData)
+                .flatMap(sat -> {
+                    System.out.println("Parsing TLE for satellite: " + sat);
+                    return parseTLE(sat.getTle());
+                });
+        System.out.println("resTLE: " + resTLE);
+        return resTLE;
     }
 
     public void getCurrentLLA(int satId) {
-        fetchTLE(satId).ifPresentOrElse(tle -> computeLLA(tle, ZonedDateTime.now(ZoneOffset.UTC)),
+        loadOrekitData();
+        fetchTLE(satId).ifPresentOrElse(tle -> computeLLA(tle),
                 () -> System.out.println("invalid tle"));
     }
 
-    public void getFutureLLA(int satId, ZonedDateTime futureTime) {
-        fetchTLE(satId).ifPresentOrElse(tle -> computeLLA(tle, futureTime),
-                () -> System.out.println("invalid tle"));
-    }
+//    public void getFutureLLA(int satId, ZonedDateTime futureTime) {
+//        fetchTLE(satId).ifPresentOrElse(tle -> computeLLA(tle, futureTime),
+//                () -> System.out.println("invalid tle"));
+//    }
 
-    private void computeLLA(TLE tle, ZonedDateTime dateTime) {
+    private void computeLLA(TLE tle) {
         try {
-            File orekitData = new File("src/main/resources/orekit-data");
-            DataProvidersManager manager = DataContext.getDefault().getDataProvidersManager();
-            manager.addProvider(new DirectoryCrawler(orekitData));
-
             Propagator propagator = SGP4.selectExtrapolator(tle);
 
             Frame earthFrame = FramesFactory.getITRF(IERSConventions.IERS_2010, true);
@@ -78,11 +106,21 @@ public class SatellitePositionService {
                     earthFrame
             );
 
+            OffsetDateTime offsetDateTime = Instant.now().atOffset(ZoneOffset.UTC);
+            int year = offsetDateTime.getYear();
+            int month = offsetDateTime.getMonthValue();
+            int day = offsetDateTime.getDayOfMonth();
+            int hour = offsetDateTime.getHour();
+            int minute = offsetDateTime.getMinute();
+            int second = offsetDateTime.getSecond();
             AbsoluteDate currentDate = new AbsoluteDate(
-                    dateTime.getYear(), dateTime.getMonthValue(), dateTime.getDayOfMonth(),
-                    dateTime.getHour(), dateTime.getMinute(), dateTime.getSecond(),
-                    TimeScalesFactory.getUTC()
+                    year, month, day, hour, minute, second, TimeScalesFactory.getUTC()
             );
+//            AbsoluteDate currentDate = new AbsoluteDate(
+//                    dateTime.getYear(), dateTime.getMonthValue(), dateTime.getDayOfMonth(),
+//                    dateTime.getHour(), dateTime.getMinute(), dateTime.getSecond(),
+//                    TimeScalesFactory.getUTC()
+//            );
 
             SpacecraftState state = propagator.propagate(currentDate);
             PVCoordinates pvCoordinates = state.getPVCoordinates(earthFrame);
@@ -97,7 +135,7 @@ public class SatellitePositionService {
             double longitude = FastMath.toDegrees(geodeticPoint.getLongitude());
             double altitudeKm = geodeticPoint.getAltitude() / 1000.0;
 
-            System.out.println("Position at " + dateTime + ":");
+            System.out.println("Position at " + currentDate + ":");
             System.out.printf("Latitude:  %.2f°\n", latitude);
             System.out.printf("Longitude: %.2f°\n", longitude);
             System.out.printf("Altitude:  %.2f km\n", altitudeKm);
