@@ -28,45 +28,92 @@
   color: #61dafb;
 }
 
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
 .app-container {
   display: flex;
   height: 100vh;
+  width: 100vw;
 }
 
 .sidebar {
-
+  width: 300px;
+  min-width: 250px;
+  max-width: 350px;
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   padding: 20px;
   background-color: #232730;
   overflow-y: auto;
 }
+.logo-title {
+  display: flex;
+  align-items: center; 
+  justify-content: flex-start;
+  gap: 10px;
+  position: relative;
+  
+}
+
+.containter{
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+}
 
 .sidebar-logo {
-  margin-left: 90px;
-  transform: rotate(280deg);
-  width: 150px; /* Match the font size of the title */
-  height: auto; /* Maintain aspect ratio */
-}
-.sidebar h1 {
-  font-size: 75px;
-  writing-mode: horizontal-tb; /* Rotates text from top to bottom */
-  text-orientation: upright; /* Keeps letters upright */
-  transform: rotate(270deg); /* Flips the text if needed */
-  text-align: center;
-  color: white;
-  margin-bottom: 40px;
+  width: 105px; 
+  height: 105px;
+  margin-top: -63px;
+  margin-left: -110px;
+  margin-right: -80px;
+  
 }
 
+.sidebar h1 {
+  text-align: center; 
+  font-size: 45px;
+  color: white;
+  margin-top: 10px; /* Adjust spacing between logo and text */
+  letter-spacing: -3px;  
+}
+.title-text {
+  display: flex;
+  flex-direction: column; /* Ensure "Satellite" is above "Visualizer" */
+  line-height: 0.8; /* Adjust line height for better spacing */
+  text-align: right;
+  line-height: 1.1;
+  color: white;
+  font-size: 4px;
+  letter-spacing: -3px;
+  flex-wrap: nowrap;
+}
+
+.satellite-text {
+  font-size: 45px;
+  margin-right: -55px;
+  letter-spacing: -3px;
+  margin-bottom: -20px;
+  margin-top: -200px;
+}
 
 .viewer-container {
-  flex: 4;
+  flex: 1;
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+}
+.viewer-container .cesium-viewer {
+  width: 100%;
   height: 100%;
 }
-
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);
