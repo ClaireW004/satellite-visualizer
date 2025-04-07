@@ -10,10 +10,16 @@ package com.teamtech.satellitevisualizer.controller;
 
 import com.teamtech.satellitevisualizer.models.SatelliteData;
 import com.teamtech.satellitevisualizer.service.SatelliteService;
+import com.teamtech.satellitevisualizer.service.SatellitePositionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/satellite")
@@ -21,6 +27,9 @@ public class SatelliteController {
 
     @Autowired
     private SatelliteService satelliteService;
+
+    @Autowired
+    private SatellitePositionService satellitePositionService;
 
     /*
     Fetches and saves TLE data based on its NORAD ID
@@ -43,14 +52,22 @@ public class SatelliteController {
      */
     @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping("/{noradId}/tle")
-    public ResponseEntity<String> getTLE(@PathVariable int noradId) {
+    public ResponseEntity<Map<String, Object>> getTLE(@PathVariable int noradId) {
         System.out.println("Fetching TLE for NORAD ID: " + noradId);
         SatelliteData satellite = satelliteService.getSatelliteBySatid(noradId);
         System.out.println(satellite);
         if (satellite != null) {
-            return ResponseEntity.ok(satellite.getTle());
+            Map<String, Object> response = new HashMap<>();
+            response.put("tle", satellite.getTle());
+
+            SatelliteData updatedSatellite = satellitePositionService.getCurrentLLA(noradId);
+            response.put("currentLLA", updatedSatellite.getGeodeticCoordinates());
+
+            return ResponseEntity.ok(response);
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Satellite not found!");
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Satellite not found!");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
         }
     }
 }
