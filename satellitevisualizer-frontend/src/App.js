@@ -13,18 +13,21 @@ const App = () => {
     const [noradId, setNoradId] = React.useState(25544);
     const [inputValue, setInputValue] = useState('');
     const [tle, setTle] = useState("");
+    const [currentLLA, setCurrentLLA] = useState([]);
     const [error, setError] = useState(""); 
     const viewer = React.useRef(null);
 
-    const fetchTLE = async () => {
+    const fetchTLEandLLA = async () => {
         try {
             const response = await axios.get(`http://localhost:8080/api/satellite/${noradId}/tle`);
             console.log(response.data);
-            setTle(response.data);
+            setTle(response.data.tle);
+            setCurrentLLA(response.data.currentLLA);
             setError('');
         } catch (err) {
             setError('Failed to fetch TLE data. Satellite not found or server error.');
             setTle('');
+            setCurrentLLA([]);
         }
     };
 
@@ -37,8 +40,9 @@ const App = () => {
         const parsedId = parseInt(inputValue, 10); 
         if (!isNaN(parsedId)) { 
             setNoradId(parsedId); 
+            fetchTLEandLLA(noradId);
         }
-        fetchTLE(noradId);
+        
     };
 
     return (
@@ -55,6 +59,17 @@ const App = () => {
                     <button type="submit">Submit</button> 
                 </form>
                 <TLEDisplay  tle={tle} error={error}/>
+                {currentLLA.length > 0 && (
+                <div>
+                    <h3>Current LLA:</h3>
+                    {currentLLA.map((row, rowIndex) => (
+                        <div key={rowIndex}>
+                            Row {rowIndex + 1}: {row.join(", ")}
+                        </div>
+                    ))}
+                </div>
+            )}
+
             </div>
             <div className="viewer-container">
                 <Viewer ref={viewer} homeButton={false}>
