@@ -48,11 +48,61 @@ html, body, #root {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   padding: 20px;
   background-color: #232730;
   overflow-y: auto;
+}
+.logo-title {
+  display: flex;
+  align-items: center; 
+  justify-content: flex-start;
+  gap: 10px;
+  position: relative;
+  
+}
+
+.containter{
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+}
+
+.sidebar-logo {
+  width: 105px; 
+  height: 105px;
+  margin-top: -63px;
+  margin-left: -110px;
+  margin-right: -80px;
+  
+}
+
+.sidebar h1 {
+  text-align: center; 
+  font-size: 45px;
+  color: white;
+  margin-top: 10px; /* Adjust spacing between logo and text */
+  letter-spacing: -3px;  
+}
+.title-text {
+  display: flex;
+  flex-direction: column; /* Ensure "Satellite" is above "Visualizer" */
+  line-height: 0.8; /* Adjust line height for better spacing */
+  text-align: right;
+  line-height: 1.1;
+  color: white;
+  font-size: 4px;
+  letter-spacing: -3px;
+  flex-wrap: nowrap;
+}
+
+.satellite-text {
+  font-size: 45px;
+  margin-right: -55px;
+  letter-spacing: -3px;
+  margin-bottom: -20px;
+  margin-top: -200px;
 }
 
 .input-group {
@@ -98,6 +148,7 @@ input::placeholder {
   width: 100%;
   height: 100%;
 }
+
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);
