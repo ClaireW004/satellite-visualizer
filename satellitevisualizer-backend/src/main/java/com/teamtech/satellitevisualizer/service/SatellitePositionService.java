@@ -21,14 +21,14 @@ import org.orekit.utils.Constants;
 import org.orekit.utils.IERSConventions;
 import org.orekit.utils.PVCoordinates;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.aggregation.ArrayOperators;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.time.ZonedDateTime;
 import java.time.ZoneOffset;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -84,10 +84,11 @@ public class SatellitePositionService {
         return resTLE;
     }
 
-    public void getCurrentLLA(int satId) {
+    public SatelliteData getCurrentLLA(int satId) {
         loadOrekitData();
-        fetchTLE(satId).ifPresentOrElse(tle -> computeLLA(tle),
-                () -> System.out.println("invalid tle"));
+        return fetchTLE(satId).map(tle -> computeLLA(tle, satId)).orElse(null);
+//        fetchTLE(satId).ifPresentOrElse(tle -> computeLLA(tle, satId),
+//                () -> System.out.println("invalid tle"));
     }
 
 //    public void getFutureLLA(int satId, ZonedDateTime futureTime) {
@@ -95,7 +96,7 @@ public class SatellitePositionService {
 //                () -> System.out.println("invalid tle"));
 //    }
 
-    private void computeLLA(TLE tle) {
+    private SatelliteData computeLLA(TLE tle, int satId) {
         try {
             Propagator propagator = SGP4.selectExtrapolator(tle);
 
@@ -135,13 +136,39 @@ public class SatellitePositionService {
             double longitude = FastMath.toDegrees(geodeticPoint.getLongitude());
             double altitudeKm = geodeticPoint.getAltitude() / 1000.0;
 
+            var cosLat = FastMath.cos(latitude * FastMath.PI / 180.0);
+            var sinLat = FastMath.sin(latitude * FastMath.PI / 180.0);
+            var cosLon = FastMath.cos(longitude * FastMath.PI / 180.0);
+            var sinLon = FastMath.sin(longitude * FastMath.PI / 180.0);
+            var rad = 6378137.0;
+            var f = 1.0 / 298.257224;
+            var C = 1.0 / FastMath.sqrt(cosLat * cosLat + (1 - f) * (1 - f) * sinLat * sinLat);
+            var S = (1.0 - f) * (1.0 - f) * C;
+            var h = 0.0;
+            double x = (rad * C + h) * cosLat * cosLon;
+            double y = (rad * C + h) * cosLat * sinLon;
+            double z = (rad * S + h) * sinLat;
+
             System.out.println("Position at " + currentDate + ":");
             System.out.printf("Latitude:  %.2f°\n", latitude);
             System.out.printf("Longitude: %.2f°\n", longitude);
             System.out.printf("Altitude:  %.2f km\n", altitudeKm);
+            System.out.printf("x: %.2f\n", x);
+            System.out.printf("y: %.2f\n", y);
+            System.out.printf("z: %.2f\n", z);
+
+            SatelliteData satelliteData = satelliteRepository.findBySatid(satId);
+            if (satelliteData != null) {
+                List<List<Double>> coordinates = Arrays.asList(Arrays.asList(latitude, longitude, altitudeKm));
+                satelliteData.setGeodeticCoordinates(coordinates);
+                satelliteRepository.save(satelliteData);
+            }
+
+            return satelliteData;
 
         } catch (OrekitException e) {
             e.printStackTrace();
+            return null;
         }
     }
 }

@@ -15,6 +15,8 @@ import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.List;
+
 @Data
 @Document(collection = "satellites")
 @AllArgsConstructor
@@ -24,6 +26,9 @@ public class SatelliteData {
     private int satid;
     private String satname;
     private String tle;
+    private List<List<Double>> geodeticCoordinates;
+    // Whenever we save a new satellitedata, use timestamp.now so the timestamp is set to the current time
+    // private Instant timestamp;
 
     public int getSatid() {
         return satid;
@@ -48,4 +53,12 @@ public class SatelliteData {
     public void setTle(String tle) {
         this.tle = tle;
     }
+    public List<List<Double>> getGeodeticCoordinates() {
+        return geodeticCoordinates;
+    }
+
+    public void setGeodeticCoordinates(List<List<Double>> geodeticCoordinates) {
+        this.geodeticCoordinates = geodeticCoordinates;
+    }
+
 }
