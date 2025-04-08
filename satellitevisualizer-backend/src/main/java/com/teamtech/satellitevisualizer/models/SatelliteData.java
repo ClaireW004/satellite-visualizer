@@ -27,6 +27,7 @@ public class SatelliteData {
     private String satname;
     private String tle;
     private List<List<Double>> geodeticCoordinates;
+    private List<List<Double>> xyzCoordinates;
     // Whenever we save a new satellitedata, use timestamp.now so the timestamp is set to the current time
     // private Instant timestamp;
 
@@ -59,6 +60,10 @@ public class SatelliteData {
 
     public void setGeodeticCoordinates(List<List<Double>> geodeticCoordinates) {
         this.geodeticCoordinates = geodeticCoordinates;
+    }
+
+    public void setXYZCoordinates(List<List<Double>> xyzCoordinates) {
+        this.xyzCoordinates = xyzCoordinates;
     }
 
 }

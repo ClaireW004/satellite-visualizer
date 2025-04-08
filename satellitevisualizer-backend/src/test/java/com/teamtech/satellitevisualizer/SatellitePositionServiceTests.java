@@ -88,14 +88,14 @@ class SatellitePositionServiceTests {
     }
 
     // fetches the future LLA for iss 25544
-    // todo: i dont think this is accurate
-    @Test
-    void testGetFutureLLA() {
-        SatelliteData mockSatelliteData = mock(SatelliteData.class);
-        when(mockSatelliteData.getTle()).thenReturn(validTLE);
-        when(satelliteRepository.findById("25544")).thenReturn(Optional.of(mockSatelliteData));
-        ZonedDateTime futureTime = ZonedDateTime.now(ZoneOffset.UTC).plusHours(5);
-        System.out.println("--- FutureLLA Orekit Output ---");
-        satellitePositionService.getFutureLLA(25544, futureTime);
-    }
+//    // todo: i dont think this is accurate
+//    @Test
+//    void testGetFutureLLA() {
+//        SatelliteData mockSatelliteData = mock(SatelliteData.class);
+//        when(mockSatelliteData.getTle()).thenReturn(validTLE);
+//        when(satelliteRepository.findById("25544")).thenReturn(Optional.of(mockSatelliteData));
+//        ZonedDateTime futureTime = ZonedDateTime.now(ZoneOffset.UTC).plusHours(5);
+//        System.out.println("--- FutureLLA Orekit Output ---");
+//        satellitePositionService.getFutureLLA(25544, futureTime);
+//    }
 }

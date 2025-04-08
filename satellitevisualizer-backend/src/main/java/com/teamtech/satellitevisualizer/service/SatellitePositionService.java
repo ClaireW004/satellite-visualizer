@@ -1,5 +1,7 @@
 package com.teamtech.satellitevisualizer.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.teamtech.satellitevisualizer.models.SatelliteData;
 import com.teamtech.satellitevisualizer.repository.SatelliteRepository;
 import org.hipparchus.util.FastMath;
@@ -21,6 +23,7 @@ import org.orekit.utils.Constants;
 import org.orekit.utils.IERSConventions;
 import org.orekit.utils.PVCoordinates;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -30,18 +33,26 @@ import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.ResponseEntity;
+
 
 @Service
 public class SatellitePositionService {
+    @Value("${n2yo.api.key}")
+    private String apiKey;
 
     @Autowired
     private SatelliteRepository satelliteRepository;
+
 
     private void loadOrekitData() {
         File orekitData = new File("src/main/resources/orekit-data");
         DataProvidersManager manager = DataContext.getDefault().getDataProvidersManager();
         manager.addProvider(new DirectoryCrawler(orekitData));
     }
+
 
     // separates a tle string into two lines
     public static Optional<TLE> parseTLE(String tleData) {
@@ -66,13 +77,11 @@ public class SatellitePositionService {
             System.out.println("Error creating TLE: " + e.getMessage());
             return Optional.empty();
         }
-//        return Optional.of(new TLE(line1, line2));
     }
+
 
     public Optional<TLE> fetchTLE(int satId) {
         System.out.println("satId: " + satId);
-//        return satelliteRepository.findById(String.valueOf(satId))
-//                .flatMap(sat -> parseTLE(sat.getTle()));
         SatelliteData satelliteData = satelliteRepository.findBySatid(satId);
         System.out.println("satelliteData: " + satelliteData);
         Optional<TLE> resTLE = Optional.ofNullable(satelliteData)
@@ -84,17 +93,12 @@ public class SatellitePositionService {
         return resTLE;
     }
 
+
     public SatelliteData getCurrentLLA(int satId) {
         loadOrekitData();
         return fetchTLE(satId).map(tle -> computeLLA(tle, satId)).orElse(null);
-//        fetchTLE(satId).ifPresentOrElse(tle -> computeLLA(tle, satId),
-//                () -> System.out.println("invalid tle"));
     }
 
-//    public void getFutureLLA(int satId, ZonedDateTime futureTime) {
-//        fetchTLE(satId).ifPresentOrElse(tle -> computeLLA(tle, futureTime),
-//                () -> System.out.println("invalid tle"));
-//    }
 
     private SatelliteData computeLLA(TLE tle, int satId) {
         try {
@@ -117,11 +121,6 @@ public class SatellitePositionService {
             AbsoluteDate currentDate = new AbsoluteDate(
                     year, month, day, hour, minute, second, TimeScalesFactory.getUTC()
             );
-//            AbsoluteDate currentDate = new AbsoluteDate(
-//                    dateTime.getYear(), dateTime.getMonthValue(), dateTime.getDayOfMonth(),
-//                    dateTime.getHour(), dateTime.getMinute(), dateTime.getSecond(),
-//                    TimeScalesFactory.getUTC()
-//            );
 
             SpacecraftState state = propagator.propagate(currentDate);
             PVCoordinates pvCoordinates = state.getPVCoordinates(earthFrame);
@@ -136,30 +135,9 @@ public class SatellitePositionService {
             double longitude = FastMath.toDegrees(geodeticPoint.getLongitude());
             double altitudeKm = geodeticPoint.getAltitude() / 1000.0;
 
-            var cosLat = FastMath.cos(latitude * FastMath.PI / 180.0);
-            var sinLat = FastMath.sin(latitude * FastMath.PI / 180.0);
-            var cosLon = FastMath.cos(longitude * FastMath.PI / 180.0);
-            var sinLon = FastMath.sin(longitude * FastMath.PI / 180.0);
-            var rad = 6378137.0;
-            var f = 1.0 / 298.257224;
-            var C = 1.0 / FastMath.sqrt(cosLat * cosLat + (1 - f) * (1 - f) * sinLat * sinLat);
-            var S = (1.0 - f) * (1.0 - f) * C;
-            var h = 0.0;
-            double x = (rad * C + h) * cosLat * cosLon;
-            double y = (rad * C + h) * cosLat * sinLon;
-            double z = (rad * S + h) * sinLat;
-
-            System.out.println("Position at " + currentDate + ":");
-            System.out.printf("Latitude:  %.2f°\n", latitude);
-            System.out.printf("Longitude: %.2f°\n", longitude);
-            System.out.printf("Altitude:  %.2f km\n", altitudeKm);
-            System.out.printf("x: %.2f\n", x);
-            System.out.printf("y: %.2f\n", y);
-            System.out.printf("z: %.2f\n", z);
-
             SatelliteData satelliteData = satelliteRepository.findBySatid(satId);
             if (satelliteData != null) {
-                List<List<Double>> coordinates = Arrays.asList(Arrays.asList(latitude, longitude, altitudeKm));
+                List<List<Double>> coordinates = List.of(Arrays.asList(latitude, longitude, altitudeKm));
                 satelliteData.setGeodeticCoordinates(coordinates);
                 satelliteRepository.save(satelliteData);
             }
@@ -167,8 +145,81 @@ public class SatellitePositionService {
             return satelliteData;
 
         } catch (OrekitException e) {
-            e.printStackTrace();
+            e.getMessage();
             return null;
+        }
+    }
+
+    private SatelliteData getXYZ(int satId) {
+        double latitude=0, longitude=0, altitudeKm=0;
+        SatelliteData satelliteData = satelliteRepository.findBySatid(satId);
+
+        if (satelliteData == null) return null;
+
+        List<List<Double>> coords = satelliteData.getGeodeticCoordinates();
+
+        if (coords != null && !coords.isEmpty() && coords.get(0).size() == 3) {
+            // to be edited with the specific current / future coords
+            latitude = coords.get(0).get(0);
+            longitude = coords.get(0).get(1);
+            altitudeKm = coords.get(0).get(2);
+        }
+
+        // (L, L, A) -> (x, y, z)
+        var cosLat = FastMath.cos(latitude * FastMath.PI / 180.0);
+        var sinLat = FastMath.sin(latitude * FastMath.PI / 180.0);
+        var cosLon = FastMath.cos(longitude * FastMath.PI / 180.0);
+        var sinLon = FastMath.sin(longitude * FastMath.PI / 180.0);
+        var rad = 6378137.0;
+        var f = 1.0 / 298.257224;
+        var C = 1.0 / FastMath.sqrt(cosLat * cosLat + (1 - f) * (1 - f) * sinLat * sinLat);
+        var S = (1.0 - f) * (1.0 - f) * C;
+        var h = 0.0;
+        double x = (rad * C + h) * cosLat * cosLon;
+        double y = (rad * C + h) * cosLat * sinLon;
+        double z = (rad * S + h) * sinLat;
+
+        System.out.printf("x: %.2f\n", x);
+        System.out.printf("y: %.2f\n", y);
+        System.out.printf("z: %.2f\n", z);
+
+        List<List<Double>> coordinates = List.of(Arrays.asList(x, y, z));
+        satelliteData.setXYZCoordinates(coordinates);
+        satelliteRepository.save(satelliteData);
+
+        return satelliteData;
+    }
+
+
+    @Scheduled(fixedRate = 86400000) // 24 hours in ms
+    public void refreshTLEs() {
+        // get all satellites from the db
+        List<SatelliteData> allSatellites = satelliteRepository.findAll();
+        for (SatelliteData satellite : allSatellites) {
+            int satId = satellite.getSatid();
+
+            try {
+                // sends api request to get new tle
+                String url = String.format("https://api.n2yo.com/rest/v1/satellite/tle/%d&apiKey=%s", satId, apiKey);
+                RestTemplate restTemplate = new RestTemplate();
+                ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+
+                if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    JsonNode root = objectMapper.readTree(response.getBody());
+
+                    // saves new tle to db
+                    String newTle = root.get("tle").asText();
+                    satellite.setTle(newTle);
+                    satelliteRepository.save(satellite);
+
+                    System.out.printf("updated for satellite %d\n", satId);
+                    getCurrentLLA(satId);
+                    getXYZ(satId);
+                }
+            } catch (Exception e) {
+                System.err.printf("failed for satellite %d: %s\n", satId, e.getMessage());
+            }
         }
     }
 }
