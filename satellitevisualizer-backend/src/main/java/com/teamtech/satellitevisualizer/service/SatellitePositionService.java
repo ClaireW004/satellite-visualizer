@@ -135,6 +135,53 @@ public class SatellitePositionService {
             double longitude = FastMath.toDegrees(geodeticPoint.getLongitude());
             double altitudeKm = geodeticPoint.getAltitude() / 1000.0;
 
+            var cosLat = FastMath.cos(latitude * Math.PI / 180.0);
+            var sinLat = FastMath.sin(latitude * Math.PI / 180.0);
+            var cosLon = FastMath.cos(longitude * Math.PI / 180.0);
+            var sinLon = FastMath.sin(longitude * Math.PI / 180.0);
+            var rad = 6378137.0;
+            var f = 1.0 / 298.257224;
+            var C = 1.0 / Math.sqrt(cosLat * cosLat + (1 - f) * (1 - f) * sinLat * sinLat);
+            var S = (1.0 - f) * (1.0 - f) * C;
+            var h = 0.0;
+            double x = (rad * C + h) * cosLat * cosLon;
+            double y = (rad * C + h) * cosLat * sinLon;
+            double z = (rad * S + h) * sinLat;
+            double x1 = 8000;
+            double y1 = 7000;
+            double z1 = 5000;
+            double x2 = 7000;
+            double y2 = 6500;
+            double z2 = 8000;
+            double x_denom = FastMath.pow((x2-x1), 2);
+            double y_denom = FastMath.pow((y2-y1), 2);
+            double z_denom = FastMath.pow((z2-z1), 2);
+            double total = x_denom + y_denom + z_denom;
+            double distance = FastMath.sqrt(total);
+            double x_dot = (x2-x1)/distance;
+            double y_dot = (y2-y1)/distance;
+            double z_dot = (z2-z1)/distance;
+            double earth_radius = 6378.137;
+            for (int i = 0; i <- distance; i++) {
+                double x_new = x1 + (x_dot * i);
+                double y_new = y1 + (y_dot * i);
+                double z_new = z1 + (z_dot * i);
+                double point_distance = FastMath.sqrt((x_new * x_new)+ (y_new * y_new)+ (z_new * z_new));
+                if (point_distance <= earth_radius) {
+                    System.out.println("Satellites cannot see each other at time: " + hour + ":" + minute + ":" + second);
+                }
+                if(point_distance > earth_radius && i == point_distance) {
+                    System.out.println("Satellites are visible to each other at time: " + hour + ":" + minute + ":" + second);
+                }
+
+            }
+
+
+
+
+            System.out.println("X value: " + x );
+            System.out.println("Y value: " + y );
+            System.out.println("Z value: " + z );
             System.out.println("Position at " + currentDate + ":");
             System.out.printf("Latitude:  %.2f°\n", latitude);
             System.out.printf("Longitude: %.2f°\n", longitude);
