@@ -69,6 +69,12 @@
 			<artifactId>hipparchus-core</artifactId>
 			<version>2.3</version>
 		</dependency>
+		<!-- json -->
+		<dependency>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+			<version>20230227</version>
+		</dependency>
 	</dependencies>
 
 	<build>
