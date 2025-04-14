@@ -22,48 +22,24 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SatelliteData {
+    @Getter
+    @Setter
     @Id
     private int satid;
+    @Getter
+    @Setter
     private String satname;
+    @Getter
+    @Setter
     private String tle;
+    @Getter
+    @Setter
     private List<List<Double>> geodeticCoordinates;
     private List<List<Double>> xyzCoordinates;
     // Whenever we save a new satellitedata, use timestamp.now so the timestamp is set to the current time
     // private Instant timestamp;
 
-    public int getSatid() {
-        return satid;
-    }
-
-    public void setSatid(int satid) {
-        this.satid = satid;
-    }
-
-    public String getSatname() {
-        return satname;
-    }
-
-    public void setSatname(String satname) {
-        this.satname = satname;
-    }
-
-    public String getTle() {
-        return tle;
-    }
-
-    public void setTle(String tle) {
-        this.tle = tle;
-    }
-    public List<List<Double>> getGeodeticCoordinates() {
-        return geodeticCoordinates;
-    }
-
-    public void setGeodeticCoordinates(List<List<Double>> geodeticCoordinates) {
-        this.geodeticCoordinates = geodeticCoordinates;
-    }
-
     public void setXYZCoordinates(List<List<Double>> xyzCoordinates) {
         this.xyzCoordinates = xyzCoordinates;
     }
-
 }
