@@ -66,4 +66,8 @@ public class SatelliteData {
         this.xyzCoordinates = xyzCoordinates;
     }
 
+    public List<List<Double>> getXyzCoordinates() {
+        return xyzCoordinates;
+    }
+
 }
