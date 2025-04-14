@@ -151,7 +151,7 @@ public class SatellitePositionService {
     }
 
     private SatelliteData getXYZ(int satId) {
-        double latitude=0, longitude=0, altitudeKm=0;
+        double latitude=0, longitude=0;//, altitudeKm=0;
         SatelliteData satelliteData = satelliteRepository.findBySatid(satId);
 
         if (satelliteData == null) return null;
@@ -162,7 +162,7 @@ public class SatellitePositionService {
             // to be edited with the specific current / future coords
             latitude = coords.get(0).get(0);
             longitude = coords.get(0).get(1);
-            altitudeKm = coords.get(0).get(2);
+            //altitudeKm = coords.get(0).get(2);
         }
 
         // (L, L, A) -> (x, y, z)
@@ -221,5 +221,60 @@ public class SatellitePositionService {
                 System.err.printf("failed for satellite %d: %s\n", satId, e.getMessage());
             }
         }
+
+    }
+
+
+    public boolean isVisible(int satId1, int satId2) {
+        OffsetDateTime now = Instant.now().atOffset(ZoneOffset.UTC);
+        int hour = now.getHour();
+        int minute = now.getMinute();
+        int second = now.getSecond();
+
+        // gets interested satellites in db
+        SatelliteData sat1 = satelliteRepository.findBySatid(satId1);
+        SatelliteData sat2 = satelliteRepository.findBySatid(satId2);
+
+        // calculates xyz
+        double x1 = sat1.getXyzCoordinates().get(0).get(0);
+        double y1 = sat1.getXyzCoordinates().get(0).get(1);
+        double z1 = sat1.getXyzCoordinates().get(0).get(2);
+        double x2 = sat2.getXyzCoordinates().get(0).get(0);
+        double y2 = sat2.getXyzCoordinates().get(0).get(1);
+        double z2 = sat2.getXyzCoordinates().get(0).get(2);
+
+        // calculates change
+        double dx = x2 - x1;
+        double dy = y2 - y1;
+        double dz = z2 - z1;
+        double distance = FastMath.sqrt(dx * dx + dy * dy + dz * dz);
+
+        double x_dot = dx / distance;
+        double y_dot = dy / distance;
+        double z_dot = dz / distance;
+
+        double earthRadius = 6378137.0;
+        double step = 10000; // in meters
+
+        boolean visible = true;
+        for (double i = 0; i <= distance; i += step) {
+            double x = x1 + x_dot * i;
+            double y = y1 + y_dot * i;
+            double z = z1 + z_dot * i;
+
+            double r = FastMath.sqrt(x * x + y * y + z * z);
+
+            if (r <= earthRadius) {
+                visible = false;
+                System.out.println("satellites cannot see each other at time: " + hour + ":" + minute + ":" + second);
+                break;
+            }
+        }
+
+        if (visible){
+            System.out.println("satellites are visible to each other at time: " + hour + ":" + minute + ":" + second);
+        }
+
+        return visible;
     }
 }
