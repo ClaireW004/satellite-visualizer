@@ -55,6 +55,7 @@ html, body, #root {
   background-color: #232730;
   overflow-y: auto;
 }
+
 .logo-title {
   display: flex;
   align-items: center; 
@@ -62,12 +63,6 @@ html, body, #root {
   gap: 10px;
   position: relative;
   
-}
-
-.containter{
-  display: flex;
-  align-items: flex-start;
-  position: relative;
 }
 
 .sidebar-logo {
@@ -86,6 +81,7 @@ html, body, #root {
   margin-top: 10px; /* Adjust spacing between logo and text */
   letter-spacing: -3px;  
 }
+
 .title-text {
   display: flex;
   flex-direction: column; /* Ensure "Satellite" is above "Visualizer" */
@@ -137,6 +133,7 @@ html, body, #root {
   margin-top: 10px; /* Adjust spacing between logo and text */
   letter-spacing: -3px;  
 }
+
 .title-text {
   display: flex;
   flex-direction: column; /* Ensure "Satellite" is above "Visualizer" */
@@ -187,6 +184,42 @@ input::placeholder {
   border: none;
   padding: 18px;
   font-size:80%;
+}
+
+.info-container {
+  max-height: 40vh; /* or whatever fits your layout */
+  overflow-y: auto;
+  padding: 10px;
+  color: white;
+}
+
+.lla-display {
+  margin-top: 10px;
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 20px;
+  border-radius: 10px;
+  width: 250px
+}
+
+.message-box {
+  background-color: #30343c;
+  padding: 15px;
+  border-radius: 10px;
+  text-align: center;
+  max-width: 70%;
+  margin: 0 auto;
+}
+
+.message-box.error {
+  background-color: #30343c;
+  color: #b00020;
+  margin: 0 auto;
+}
+
+.message-box.info {
+  background-color: #30343c;
+  color: #ffffff;
+  margin: 0 auto;
 }
  
 .viewer-container {
