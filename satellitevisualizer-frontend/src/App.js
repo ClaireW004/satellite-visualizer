@@ -5,6 +5,8 @@ import TLEDisplay from './components/TLEDisplay';
 import cesiumLogo from './cesiumLogo.png';
 import axios from 'axios';
 import './App.css';
+Cesium.Ion.defaultAccessToken = process.env.REACT_APP_CESIUM_ACCESS_TOKEN;
+console.log('Access Token:', process.env.REACT_APP_CESIUM_ACCESS_TOKEN);
 
 const App = () => {
     // const noradId = 25544; // example norad id for the iss
@@ -12,9 +14,11 @@ const App = () => {
     const [inputNorad1, setinputNorad1] = useState('');
     const [inputNorad2, setinputNorad2] = useState('');
     const [tle, setTle] = useState("");
-    const [currentLLA1, setCurrentLLA1] = useState({ latitude: undefined, longitude: undefined, altitude: undefined });
-    const [currentLLA2, setCurrentLLA2] = useState({ latitude: undefined, longitude: undefined, altitude: undefined });
+    const [currentLLA1, setCurrentLLA1] = useState({ latitude: 0, longitude: 0, altitude: 0 });
+    const [currentLLA2, setCurrentLLA2] = useState({ latitude: 0, longitude: 0, altitude: 0 });
     const [error, setError] = useState("");
+    const [submitted, setSubmitted] = useState(false);
+
     const viewerRef = useRef(null);
 
     const fetchTLEandLLA = async (noradId, setLLA) => {
@@ -23,15 +27,21 @@ const App = () => {
             console.log(response.data);
 
             const llaArray = response.data.currentLLA;
-            if (Array.isArray(llaArray)) {
+            console.log("lla array ", llaArray);
+            console.log("lla lat ", llaArray[0][0]);
+            console.log("lla lon ", llaArray[0][1]);
+            console.log("lla alt ", llaArray[0][2]);
+            if (llaArray[0].length === 3) {
+
                 const llaObject = {
-                    latitude: llaArray[0],
-                    longitude: llaArray[1],
-                    altitude: llaArray[2]
+                    latitude: llaArray[0][0],
+                    longitude: llaArray[0][1],
+                    altitude: llaArray[0][2]
                 };
+                console.log("lla object ", llaObject);
                 setLLA(llaObject);
             } else {
-                setLLA(response.data.currentLLA);
+                setLLA({ latitude: 0, longitude: 0, altitude: 0 });
             }
 
             setTle(response.data.tle);
@@ -49,17 +59,29 @@ const App = () => {
         setinputNorad2(event.target.value);
     };
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
         const parsedId1 = parseInt(inputNorad1, 10);
         const parsedId2 = parseInt(inputNorad2, 10);
+
         if (!isNaN(parsedId1) && !isNaN(parsedId2)) {
-            fetchTLEandLLA(parsedId1, setCurrentLLA1);
-            fetchTLEandLLA(parsedId2, setCurrentLLA2);
-            console.log(parsedId1);
-            console.log(parsedId2);
+            setSubmitted(true); 
+            try {
+                await fetchTLEandLLA(parsedId1, setCurrentLLA1);
+                await fetchTLEandLLA(parsedId2, setCurrentLLA2);
+                console.log("LLAs updated");
+            } catch (error) {
+                console.error("Error fetching LLA:", error);
+            }
+        } else {
+            setSubmitted(false); 
         }
     };
+
+    const isLLAValid = (lla) =>
+        lla.latitude !== undefined &&
+        lla.longitude !== undefined &&
+        lla.altitude !== undefined;
 
     return (
         <div className="app-container">
@@ -76,6 +98,8 @@ const App = () => {
                         <input
                             type="text"
                             placeholder="Enter NORAD ID 1"
+                            value={inputNorad1}
+                            onChange={handleNoradChange1}
                             style={{
                                 margin: "10px",
                                 padding: "10px",
@@ -88,6 +112,8 @@ const App = () => {
                         <input
                             type="text"
                             placeholder="Enter NORAD ID 2"
+                            value={inputNorad2}
+                            onChange={handleNoradChange2}
                             style={{
                                 margin: "10px",
                                 padding: "10px",
@@ -114,68 +140,40 @@ const App = () => {
                     </div>
                 </form>
                 <TLEDisplay noradId={noradId} />
-                {currentLLA1.length > 0 && currentLLA2.length > 0 && (
-                    <div style={{ color: "white" }}>
-                        <h3>Current LLA:</h3>
-                        <div>
-                            <strong>Satellite 1:</strong>
-                            Lat: {(currentLLA1.latitude)},
-                            Lon: {currentLLA1.longitude},
-                            Alt: {currentLLA1.altitude} km
+                <div className="info-container">
+                    {submitted ? (
+                        isLLAValid(currentLLA1) && isLLAValid(currentLLA2) ? (
+                            <div className="lla-display">
+                                <h3>Current Geodetic Locations</h3>
+                                <div>
+                                    <strong>Satellite {inputNorad1 || '1'}:</strong><br />
+                                    Lat: {currentLLA1.latitude}<br />
+                                    Lon: {currentLLA1.longitude}<br />
+                                    Alt: {currentLLA1.altitude} km
+                                </div>
+                                <br />
+                                <div>
+                                    <strong>Satellite {inputNorad2 || '2'}:</strong><br />
+                                    Lat: {currentLLA2.latitude}<br />
+                                    Lon: {currentLLA2.longitude}<br />
+                                    Alt: {currentLLA2.altitude} km
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="message-box error">
+                                Error: Unable to retrieve satellite location data.
+                            </div>
+                        )
+                    ) : (
+                        <div className="message-box info">
+                            Enter 2 NORAD IDs in to view their geodetic locations.
                         </div>
-                        <div>
-                            <strong>Satellite 2:</strong>
-                            Lat: {(currentLLA2[0])},
-                            Lon: {(currentLLA2[1])},
-                            Alt: {(currentLLA2[2])} km
-                        </div>
-                    </div>
-                )}
-
+                    )}
+                </div>
             </div>
             <div className="viewer-container">
                 <Viewer ref={viewerRef} homeButton={false}>
-                    {currentLLA1.longitude !== undefined && (
-                        <Entity
-                            name="Satellite 1"
-                            position={Cesium.Cartesian3.fromDegrees(
-                                currentLLA1.longitude,
-                                currentLLA1.latitude,
-                                currentLLA1.altitude * 1000 // km to meters
-                            )}
-                            point={{
-                                pixelSize: 10,
-                                color: Cesium.Color.RED,
-                                outlineColor: Cesium.Color.WHITE,
-                                outlineWidth: 2
-                            }}
-                            description={`Position:<br />
-                          Latitude: ${currentLLA1.latitude}°<br />
-                          Longitude: ${currentLLA1.longitude}°<br />
-                          Altitude: ${currentLLA1.altitude} km`}
-                        />
-                    )}
 
-                    {currentLLA2.longitude !== undefined && (
-                        <Entity
-                            name="Satellite 2"
-                            position={Cesium.Cartesian3.fromDegrees(
-                                currentLLA2.longitude,
-                                currentLLA2.latitude,
-                                currentLLA2.altitude * 1000
-                            )}
-                            point={{
-                                pixelSize: 10,
-                                color: Cesium.Color.BLUE,
-                                outlineColor: Cesium.Color.WHITE,
-                                outlineWidth: 2
-                            }}
-                            description={`Position: <br /> 
-                    Altitude: ${currentLLA2.altitude} km <br /> 
-                    Lat: ${currentLLA2.latitude} <br /> 
-                    Long: ${currentLLA2.longitude}`}
-                        />
-                    )}
                 </Viewer>
             </div>
         </div >
