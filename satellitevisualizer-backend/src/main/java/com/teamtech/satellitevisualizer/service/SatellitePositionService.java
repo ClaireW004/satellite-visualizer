@@ -267,26 +267,26 @@ public class SatellitePositionService {
      * The detector triggers an event when the satellite's elevation above the horizon at a specific location exceeds a certain threshold.
      * @return the event detector
      */
-//    public EventDetector setupDetector() {
-//        OneAxisEllipsoid earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
-//                Constants.WGS84_EARTH_FLATTENING,
-//                FramesFactory.getITRF(IERSConventions.IERS_2010, true));
-//        GeodeticPoint charlottesville = new GeodeticPoint(Math.toRadians(38.0293), Math.toRadians(-78.4767), 0.0);
-//        TopocentricFrame charlottesvilleFrame = new TopocentricFrame(earth, charlottesville, "Charlottesville");
-//        double maxcheck = 60.0;
-//        double threshold = 0.001;
-//        double elevation = Math.toRadians(5.0);
-//        EventDetector detector = new ElevationDetector(maxcheck, threshold, charlottesvilleFrame).
-//                withConstantElevation(elevation).
-//                withHandler(new EventHandler() {
-//                    @Override
-//                    public Action eventOccurred(SpacecraftState spacecraftState, EventDetector eventDetector, boolean b) {
-//                        System.out.println("BANG! ->" + spacecraftState.getDate().toString() + " : " + spacecraftState.getOrbit().getPVCoordinates().toString());
-//                        return Action.CONTINUE;
-//                    }
-//                });
-//        return detector;
-//    }
+    public EventDetector setupDetector() {
+        OneAxisEllipsoid earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
+                Constants.WGS84_EARTH_FLATTENING,
+                FramesFactory.getITRF(IERSConventions.IERS_2010, true));
+        GeodeticPoint charlottesville = new GeodeticPoint(Math.toRadians(38.0293), Math.toRadians(-78.4767), 0.0);
+        TopocentricFrame charlottesvilleFrame = new TopocentricFrame(earth, charlottesville, "Charlottesville");
+        double maxcheck = 60.0;
+        double threshold = 0.001;
+        double elevation = Math.toRadians(5.0);
+        EventDetector detector = new ElevationDetector(maxcheck, threshold, charlottesvilleFrame).
+                withConstantElevation(elevation).
+                withHandler(new EventHandler() {
+                    @Override
+                    public Action eventOccurred(SpacecraftState spacecraftState, EventDetector eventDetector, boolean b) {
+                        System.out.println("BANG! ->" + spacecraftState.getDate().toString() + " : " + spacecraftState.getOrbit().getPVCoordinates().toString());
+                        return Action.CONTINUE;
+                    }
+                });
+        return detector;
+    }
 
     /**
      * Creates the initial orbit for the satellite propagation.
@@ -301,23 +301,19 @@ public class SatellitePositionService {
      * mu - the gravitational parameter
      * @return the initial orbit
      */
-//    public Orbit createInitialOrbit(String tleData, Frame inertialFrame, AbsoluteDate initialDate, double mu) {
-//        String line1 = getLine1(tleData);
-//        String line2 = getLine2(tleData);
-//
-//        // Parse required orbital parameters from the TLE lines
-//        double a = 6378137.0; // You can define this method based on TLE and context if needed
-//        double e = parseEccentricity(line2);
-//        double i = parseInclination(line2);
-//        double omega = parsePerigee(line2);
-//        double raan = parseRightAscension(line2);
-//        double lM = parseMeanAnomaly(line2);
-//
-//        // Create and return the orbit using parsed parameters
-//        return new KeplerianOrbit(a, e, i, omega, raan, lM, PositionAngle.MEAN,
-//                inertialFrame, initialDate, mu);
-//
-//    }
+    public Orbit createInitialOrbit(String tleData, Frame inertialFrame, AbsoluteDate initialDate, double mu) {
+        String line1 = getLine1(tleData);
+        String line2 = getLine2(tleData);
+
+        double a = 6378137.0;
+        double e = parseEccentricity(line2);
+        double i = parseInclination(line2);
+        double omega = parsePerigee(line2);
+        double raan = parseRightAscension(line2);
+        double lM = parseMeanAnomaly(line2);
+
+        return new KeplerianOrbit(a, e, i, omega, raan, lM, PositionAngle.MEAN, inertialFrame, initialDate, mu);
+    }
 
     /**
      * Writes the propagated orbit of a satellite to a CZML file.
@@ -335,35 +331,35 @@ public class SatellitePositionService {
      *
      * @throws IOException If an I/O error occurs while writing to the file.
      */
-//    public void writeCZML(AbsoluteDate initialDate, AbsoluteDate finalDate, List<SpacecraftState> states) {
-//        try (FileWriter writer = new FileWriter("orbit.czml")) {
-//            // Write the CZML header
-//            writer.write("[\n");
-//            writer.write("{\"id\":\"document\",\"version\":\"1.0\"},\n");
-//
-//            // Write the satellite's path
-//            writer.write("{\"id\":\"satellite\",\"availability\":\"" + initialDate + "/" + finalDate + "\",\n");
-//            writer.write("\"position\":{\"interpolationAlgorithm\":\"LAGRANGE\",\"interpolationDegree\":5,\"epoch\":\"" + initialDate + "\",\"cartesian\":[");
-//
-//            // Write the satellite's position at each time step
-//            for (int i = 0; i < states.size(); i++) {
-//                SpacecraftState state = states.get(i);
-//                double[] position = state.getPVCoordinates().getPosition().toArray();
-//                writer.write("\n" + state.getDate().durationFrom(initialDate) + "," + position[0] + "," + position[1] + "," + position[2]);
-//                if (i < states.size() - 1) {
-//                    writer.write(",");
-//                }
-//            }
-//
-//            // Write the CZML footer
-//            writer.write("\n]},\n");
-//            writer.write("\"path\":{\"show\":[{\"boolean\":true}]},\n");
-//            writer.write("\"point\":{\"pixelSize\":5,\"color\":{\"rgba\":[255,255,0,255]}}}\n");
-//            writer.write("]\n");
-//        } catch (IOException e2) {
-//            e2.printStackTrace();
-//        }
-//    }
+    public void writeCZML(AbsoluteDate initialDate, AbsoluteDate finalDate, List<SpacecraftState> states) {
+        try (FileWriter writer = new FileWriter("orbit.czml")) {
+            // Write the CZML header
+            writer.write("[\n");
+            writer.write("{\"id\":\"document\",\"version\":\"1.0\"},\n");
+
+            // Write the satellite's path
+            writer.write("{\"id\":\"satellite\",\"availability\":\"" + initialDate + "/" + finalDate + "\",\n");
+            writer.write("\"position\":{\"interpolationAlgorithm\":\"LAGRANGE\",\"interpolationDegree\":5,\"epoch\":\"" + initialDate + "\",\"cartesian\":[");
+
+            // Write the satellite's position at each time step
+            for (int i = 0; i < states.size(); i++) {
+                SpacecraftState state = states.get(i);
+                double[] position = state.getPVCoordinates().getPosition().toArray();
+                writer.write("\n" + state.getDate().durationFrom(initialDate) + "," + position[0] + "," + position[1] + "," + position[2]);
+                if (i < states.size() - 1) {
+                    writer.write(",");
+                }
+            }
+
+            // Write the CZML footer
+            writer.write("\n]},\n");
+            writer.write("\"path\":{\"show\":[{\"boolean\":true}]},\n");
+            writer.write("\"point\":{\"pixelSize\":5,\"color\":{\"rgba\":[255,255,0,255]}}}\n");
+            writer.write("]\n");
+        } catch (IOException e2) {
+            e2.printStackTrace();
+        }
+    }
 
     @Scheduled(fixedRate = 86400000) // 24 hours in ms
     public void refreshTLEs() {
