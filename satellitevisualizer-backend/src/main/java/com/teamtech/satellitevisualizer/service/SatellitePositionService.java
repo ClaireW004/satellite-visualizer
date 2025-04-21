@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.teamtech.satellitevisualizer.models.SatelliteData;
 import com.teamtech.satellitevisualizer.repository.SatelliteRepository;
+import org.hipparchus.ode.events.Action;
 import org.hipparchus.util.FastMath;
 import org.orekit.bodies.GeodeticPoint;
 import org.orekit.bodies.OneAxisEllipsoid;
@@ -13,10 +14,17 @@ import org.orekit.data.DirectoryCrawler;
 import org.orekit.errors.OrekitException;
 import org.orekit.frames.Frame;
 import org.orekit.frames.FramesFactory;
+import org.orekit.frames.TopocentricFrame;
+import org.orekit.orbits.KeplerianOrbit;
+import org.orekit.orbits.Orbit;
+import org.orekit.orbits.PositionAngle;
 import org.orekit.propagation.Propagator;
 import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.analytical.tle.SGP4;
 import org.orekit.propagation.analytical.tle.TLE;
+import org.orekit.propagation.events.ElevationDetector;
+import org.orekit.propagation.events.EventDetector;
+import org.orekit.propagation.events.handlers.EventHandler;
 import org.orekit.time.AbsoluteDate;
 import org.orekit.time.TimeScalesFactory;
 import org.orekit.utils.Constants;
@@ -27,6 +35,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -79,6 +89,27 @@ public class SatellitePositionService {
         }
     }
 
+    public static String getLine1(String tleData) {
+        if (tleData == null || tleData.isBlank()) {
+            throw new IllegalArgumentException("Invalid TLE data: Cannot be null or blank.");
+        }
+        String[] lines = tleData.split("\\r?\\n");
+        if (lines.length < 2) {
+            throw new IllegalArgumentException("Invalid TLE data: Less than 2 lines.");
+        }
+        return lines[0].trim();
+    }
+
+    public static String getLine2(String tleData) {
+        if (tleData == null || tleData.isBlank()) {
+            throw new IllegalArgumentException("Invalid TLE data: Cannot be null or blank.");
+        }
+        String[] lines = tleData.split("\\r?\\n");
+        if (lines.length < 2) {
+            throw new IllegalArgumentException("Invalid TLE data: Less than 2 lines.");
+        }
+        return lines[1].trim();
+    }
 
     public Optional<TLE> fetchTLE(int satId) {
         System.out.println("satId: " + satId);
@@ -93,6 +124,47 @@ public class SatellitePositionService {
         return resTLE;
     }
 
+    public double parseEccentricity(String line) {
+        // Extract the eccentricity from the TLE line
+        String eccString = line.substring(26, 33).trim();
+        // Convert the string to a double and divide by 1e7 to get the actual eccentricity
+        return Double.parseDouble(eccString) / 1e7;
+    }
+
+    public double parseInclination(String line) {
+        // Extract the inclination from the TLE line
+        String incString = line.substring(8, 16).trim();
+        // Convert the string to a double
+        return Double.parseDouble(incString);
+    }
+
+    public double parsePerigee(String line) {
+        // Extract the perigee from the TLE line
+        String perigeeString = line.substring(17, 25).trim();
+        // Convert the string to a double
+        return Double.parseDouble(perigeeString);
+    }
+
+    public double parseRightAscension(String line) {
+        // Extract the right ascension from the TLE line
+        String raString = line.substring(34, 42).trim();
+        // Convert the string to a double
+        return Double.parseDouble(raString);
+    }
+
+    public double parseMeanAnomaly(String line) {
+        // Extract the mean anomaly from the TLE line
+        String maString = line.substring(43, 51).trim();
+        // Convert the string to a double
+        return Double.parseDouble(maString);
+    }
+
+    public double parseDrag(String line) {
+        // Extract the drag from the TLE line
+        String dragString = line.substring(52, 63).trim();
+        // Convert the string to a double
+        return Double.parseDouble(dragString);
+    }
 
     public SatelliteData getCurrentLLA(int satId) {
         loadOrekitData();
@@ -100,7 +172,7 @@ public class SatellitePositionService {
     }
 
 
-    private SatelliteData computeLLA(TLE tle, int satId) {
+    public SatelliteData computeLLA(TLE tle, int satId) {
         try {
             Propagator propagator = SGP4.selectExtrapolator(tle);
 
@@ -150,8 +222,8 @@ public class SatellitePositionService {
         }
     }
 
-    private SatelliteData getXYZ(int satId) {
-        double latitude=0, longitude=0;//, altitudeKm=0;
+    public SatelliteData getXYZ(int satId) {
+        double latitude=0, longitude=0, altitudeKm=0;
         SatelliteData satelliteData = satelliteRepository.findBySatid(satId);
 
         if (satelliteData == null) return null;
@@ -162,7 +234,7 @@ public class SatellitePositionService {
             // to be edited with the specific current / future coords
             latitude = coords.get(0).get(0);
             longitude = coords.get(0).get(1);
-            //altitudeKm = coords.get(0).get(2);
+            altitudeKm = coords.get(0).get(2);
         }
 
         // (L, L, A) -> (x, y, z)
@@ -319,60 +391,5 @@ public class SatellitePositionService {
                 System.err.printf("failed for satellite %d: %s\n", satId, e.getMessage());
             }
         }
-
-    }
-
-
-    public boolean isVisible(int satId1, int satId2) {
-        OffsetDateTime now = Instant.now().atOffset(ZoneOffset.UTC);
-        int hour = now.getHour();
-        int minute = now.getMinute();
-        int second = now.getSecond();
-
-        // gets interested satellites in db
-        SatelliteData sat1 = satelliteRepository.findBySatid(satId1);
-        SatelliteData sat2 = satelliteRepository.findBySatid(satId2);
-
-        // calculates xyz
-        double x1 = sat1.getXyzCoordinates().get(0).get(0);
-        double y1 = sat1.getXyzCoordinates().get(0).get(1);
-        double z1 = sat1.getXyzCoordinates().get(0).get(2);
-        double x2 = sat2.getXyzCoordinates().get(0).get(0);
-        double y2 = sat2.getXyzCoordinates().get(0).get(1);
-        double z2 = sat2.getXyzCoordinates().get(0).get(2);
-
-        // calculates change
-        double dx = x2 - x1;
-        double dy = y2 - y1;
-        double dz = z2 - z1;
-        double distance = FastMath.sqrt(dx * dx + dy * dy + dz * dz);
-
-        double x_dot = dx / distance;
-        double y_dot = dy / distance;
-        double z_dot = dz / distance;
-
-        double earthRadius = 6378137.0;
-        double step = 10000; // in meters
-
-        boolean visible = true;
-        for (double i = 0; i <= distance; i += step) {
-            double x = x1 + x_dot * i;
-            double y = y1 + y_dot * i;
-            double z = z1 + z_dot * i;
-
-            double r = FastMath.sqrt(x * x + y * y + z * z);
-
-            if (r <= earthRadius) {
-                visible = false;
-                System.out.println("satellites cannot see each other at time: " + hour + ":" + minute + ":" + second);
-                break;
-            }
-        }
-
-        if (visible){
-            System.out.println("satellites are visible to each other at time: " + hour + ":" + minute + ":" + second);
-        }
-
-        return visible;
     }
 }
