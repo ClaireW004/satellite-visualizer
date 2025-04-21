@@ -172,8 +172,36 @@ const App = () => {
                 </div>
             </div>
             <div className="viewer-container">
-                <Viewer ref={viewerRef} homeButton={false}>
-
+                <Viewer ref={viewerRef} homeButton={false} infoBox={true}>
+                    <Entity
+                        name= {`Satellite ${inputNorad1 || '1'}`}
+                        position={Cesium.Cartesian3.fromDegrees(currentLLA1.longitude, currentLLA1.latitude, currentLLA1.altitude)}
+                        point={{
+                            pixelSize: 10,
+                            color: Cesium.Color.RED,
+                            outlineColor: Cesium.Color.WHITE,
+                            outlineWidth: 2
+                        }}
+                        description={`Position: <br />
+                                   Latitude: ${currentLLA1.latitude} <br />
+                                   Longitude: ${currentLLA1.longitude} <br />
+                                   Altitude: ${currentLLA1.altitude} km <br />`}>
+                    </Entity>
+                    <Entity
+                        name= {`Satellite ${inputNorad2 || '2'}`}
+                        position={Cesium.Cartesian3.fromDegrees(currentLLA2.longitude, currentLLA2.latitude, currentLLA2.altitude)}
+                        point={{
+                            pixelSize: 10,
+                            color: Cesium.Color.RED,
+                            outlineColor: Cesium.Color.WHITE,
+                            outlineWidth: 2
+                        }}
+                        description={`Position: <br />
+                                   Latitude: ${currentLLA2.latitude} <br />
+                                   Longitude: ${currentLLA2.longitude} <br />
+                                   Altitude: ${currentLLA2.altitude} km <br />
+                                   `}>
+                    </Entity>
                 </Viewer>
             </div>
         </div >
