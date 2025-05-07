@@ -65,16 +65,37 @@ const App = () => {
         const parsedId2 = parseInt(inputNorad2, 10);
 
         if (!isNaN(parsedId1) && !isNaN(parsedId2)) {
-            setSubmitted(true); 
+            setSubmitted(true);
             try {
                 await fetchTLEandLLA(parsedId1, setCurrentLLA1);
                 await fetchTLEandLLA(parsedId2, setCurrentLLA2);
                 console.log("LLAs updated");
+
+                const res1 = await fetch(`http://localhost:8080/api/satellite/${parsedId1}/czml`);
+                const czml1 = await res1.json();
+
+                const czmlSource1 = new Cesium.CzmlDataSource();
+                const viewer = viewerRef.current?.cesiumElement;
+                if (viewer) {
+                    viewer.dataSources.add(czmlSource1);
+                    czmlSource1.load(czml1);
+                    console.log("loaded czml 1");
+                }
+
+                const res2 = await fetch(`http://localhost:8080/api/satellite/${parsedId2}/czml`);
+                const czml2 = await res2.json();
+
+                const czmlSource2 = new Cesium.CzmlDataSource();
+                if (viewer) {
+                    viewer.dataSources.add(czmlSource2);
+                    czmlSource2.load(czml2);
+                    console.log("loaded czml 2");
+                }
             } catch (error) {
                 console.error("Error fetching LLA:", error);
             }
         } else {
-            setSubmitted(false); 
+            setSubmitted(false);
         }
     };
 
