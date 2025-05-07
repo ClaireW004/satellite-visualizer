@@ -47,7 +47,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.ResponseEntity;
 
-
 @Service
 public class SatellitePositionService {
     @Value("${n2yo.api.key}")
@@ -56,13 +55,11 @@ public class SatellitePositionService {
     @Autowired
     private SatelliteRepository satelliteRepository;
 
-
     private void loadOrekitData() {
         File orekitData = new File("src/main/resources/orekit-data");
         DataProvidersManager manager = DataContext.getDefault().getDataProvidersManager();
         manager.addProvider(new DirectoryCrawler(orekitData));
     }
-
 
     // separates a tle string into two lines
     public static Optional<TLE> parseTLE(String tleData) {
@@ -134,35 +131,30 @@ public class SatellitePositionService {
     public double parseInclination(String line) {
         // Extract the inclination from the TLE line
         String incString = line.substring(8, 16).trim();
-        // Convert the string to a double
         return Double.parseDouble(incString);
     }
 
     public double parsePerigee(String line) {
         // Extract the perigee from the TLE line
         String perigeeString = line.substring(17, 25).trim();
-        // Convert the string to a double
         return Double.parseDouble(perigeeString);
     }
 
     public double parseRightAscension(String line) {
         // Extract the right ascension from the TLE line
         String raString = line.substring(34, 42).trim();
-        // Convert the string to a double
         return Double.parseDouble(raString);
     }
 
     public double parseMeanAnomaly(String line) {
         // Extract the mean anomaly from the TLE line
         String maString = line.substring(43, 51).trim();
-        // Convert the string to a double
         return Double.parseDouble(maString);
     }
 
     public double parseDrag(String line) {
         // Extract the drag from the TLE line
         String dragString = line.substring(52, 63).trim();
-        // Convert the string to a double
         return Double.parseDouble(dragString);
     }
 
@@ -171,7 +163,12 @@ public class SatellitePositionService {
         return fetchTLE(satId).map(tle -> computeLLA(tle, satId)).orElse(null);
     }
 
-
+    /**
+     * Computes the latitude, longitude, and altitude of a satellite based on its TLE data.
+     * @param tle The TLE data of the satellite.
+     * @param satId The satellite norad ID.
+     * @return A SatelliteData object containing the geodetic coordinates.
+     */
     public SatelliteData computeLLA(TLE tle, int satId) {
         try {
             Propagator propagator = SGP4.selectExtrapolator(tle);
@@ -359,6 +356,59 @@ public class SatellitePositionService {
         } catch (IOException e2) {
             e2.printStackTrace();
         }
+    }
+
+    public boolean isVisible(int satId1, int satId2) {
+        OffsetDateTime now = Instant.now().atOffset(ZoneOffset.UTC);
+        int hour = now.getHour();
+        int minute = now.getMinute();
+        int second = now.getSecond();
+
+        // gets interested satellites in db
+        SatelliteData sat1 = satelliteRepository.findBySatid(satId1);
+        SatelliteData sat2 = satelliteRepository.findBySatid(satId2);
+
+        // calculates xyz
+        double x1 = sat1.getXyzCoordinates().get(0).get(0);
+        double y1 = sat1.getXyzCoordinates().get(0).get(1);
+        double z1 = sat1.getXyzCoordinates().get(0).get(2);
+        double x2 = sat2.getXyzCoordinates().get(0).get(0);
+        double y2 = sat2.getXyzCoordinates().get(0).get(1);
+        double z2 = sat2.getXyzCoordinates().get(0).get(2);
+
+        // calculates change
+        double dx = x2 - x1;
+        double dy = y2 - y1;
+        double dz = z2 - z1;
+        double distance = FastMath.sqrt(dx * dx + dy * dy + dz * dz);
+
+        double x_dot = dx / distance;
+        double y_dot = dy / distance;
+        double z_dot = dz / distance;
+
+        double earthRadius = 6378137.0;
+        double step = 10000; // in meters
+
+        boolean visible = true;
+        for (double i = 0; i <= distance; i += step) {
+            double x = x1 + x_dot * i;
+            double y = y1 + y_dot * i;
+            double z = z1 + z_dot * i;
+
+            double r = FastMath.sqrt(x * x + y * y + z * z);
+
+            if (r <= earthRadius) {
+                visible = false;
+                System.out.println("satellites cannot see each other at time: " + hour + ":" + minute + ":" + second);
+                break;
+            }
+        }
+
+        if (visible) {
+            System.out.println("satellites are visible to each other at time: " + hour + ":" + minute + ":" + second);
+        }
+
+        return visible;
     }
 
     @Scheduled(fixedRate = 86400000) // 24 hours in ms

@@ -64,6 +64,10 @@ public class SatelliteData {
     // Whenever we save a new satellitedata, use timestamp.now so the timestamp is set to the current time
     // private Instant timestamp;
 
+    public List<List<Double>> getXyzCoordinates() {
+        return xyzCoordinates;
+    }
+
     public void setXYZCoordinates(List<List<Double>> xyzCoordinates) {
         this.xyzCoordinates = xyzCoordinates;
     }

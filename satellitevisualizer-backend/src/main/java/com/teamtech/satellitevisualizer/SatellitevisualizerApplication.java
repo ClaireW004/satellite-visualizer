@@ -30,10 +30,10 @@ public class SatellitevisualizerApplication {
 		SatellitePositionService satellitePositionService = context.getBean(SatellitePositionService.class);
 		SatelliteService satelliteService = context.getBean(SatelliteService.class);
 //		satelliteService.fetchAndSaveTLE(51850);
-		satelliteService.fetchAndSaveTLE(44945);
+//		satelliteService.fetchAndSaveTLE(44945);
 //		SatelliteResponse satelliteResponse = satelliteService.getSatelliteTLE(44945);
 //		String tleData = satelliteResponse.getTle();
-		List<SpacecraftState> states = new ArrayList<>();
+//		List<SpacecraftState> states = new ArrayList<>();
 
 
 		// Call getCurrentLLA with the satellite ID 25544
@@ -46,38 +46,38 @@ public class SatellitevisualizerApplication {
 //		TLE tle = new TLE(line1, line2);
 //		int satId = 44945;
 //		satellitePositionService.getCurrentLLA(satId);
-		try {
-			// Set the gravitational parameter for Earth (in m^3/s^2)
-			double MU = 3.986004418e14;
-			// Set up an event detector. This will trigger an event when the satellite's elevation above the horizon at a specific location exceeds a certain threshold.
-			EventDetector detector = satellitePositionService.setupDetector();
-
-			// Set the initial date. This is the date at which the orbit is defined.
-			AbsoluteDate initialDate = AbsoluteDate.J2000_EPOCH;
-
-			// Set the inertial frame. This is the frame in which the orbit is defined.
-			Frame inertialFrame = FramesFactory.getEME2000();
-
-			// Create the initial orbit. This defines the initial state of the satellite.
-			Orbit initialOrbit = satellitePositionService.createInitialOrbit(tleData, inertialFrame, initialDate, MU);
-
-			// Set the propagator. This will be used to propagate the orbit over time.
-			KeplerianPropagator propagator = new KeplerianPropagator(initialOrbit);
-
-			// Add the event detector to the propagator.
-			propagator.addEventDetector(detector);
-
-			// Propagate the orbit for 90 minutes (typical period for LEO satellites).
-			AbsoluteDate finalDate = initialDate.shiftedBy(90.0 * 60.0);
-			SpacecraftState currentState = propagator.getInitialState();
-			while (currentState.getDate().compareTo(finalDate) <= 0) {
-				states.add(currentState);
-				currentState = propagator.propagate(currentState.getDate().shiftedBy(60)); // Propagate every 60 seconds
-			}
-			// Write the propagated orbit to a CZML file. This can be used to visualize the orbit.
-			satellitePositionService.writeCZML(initialDate, finalDate, states);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+//		try {
+//			// Set the gravitational parameter for Earth (in m^3/s^2)
+//			double MU = 3.986004418e14;
+//			// Set up an event detector. This will trigger an event when the satellite's elevation above the horizon at a specific location exceeds a certain threshold.
+//			EventDetector detector = satellitePositionService.setupDetector();
+//
+//			// Set the initial date. This is the date at which the orbit is defined.
+//			AbsoluteDate initialDate = AbsoluteDate.J2000_EPOCH;
+//
+//			// Set the inertial frame. This is the frame in which the orbit is defined.
+//			Frame inertialFrame = FramesFactory.getEME2000();
+//
+//			// Create the initial orbit. This defines the initial state of the satellite.
+//			Orbit initialOrbit = satellitePositionService.createInitialOrbit(tleData, inertialFrame, initialDate, MU);
+//
+//			// Set the propagator. This will be used to propagate the orbit over time.
+//			KeplerianPropagator propagator = new KeplerianPropagator(initialOrbit);
+//
+//			// Add the event detector to the propagator.
+//			propagator.addEventDetector(detector);
+//
+//			// Propagate the orbit for 90 minutes (typical period for LEO satellites).
+//			AbsoluteDate finalDate = initialDate.shiftedBy(90.0 * 60.0);
+//			SpacecraftState currentState = propagator.getInitialState();
+//			while (currentState.getDate().compareTo(finalDate) <= 0) {
+//				states.add(currentState);
+//				currentState = propagator.propagate(currentState.getDate().shiftedBy(60)); // Propagate every 60 seconds
+//			}
+//			// Write the propagated orbit to a CZML file. This can be used to visualize the orbit.
+//			satellitePositionService.writeCZML(initialDate, finalDate, states);
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
 	}
 }
