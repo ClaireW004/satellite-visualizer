@@ -71,9 +71,4 @@ public class SatelliteData {
     public void setXYZCoordinates(List<List<Double>> xyzCoordinates) {
         this.xyzCoordinates = xyzCoordinates;
     }
-
-    public List<List<Double>> getXyzCoordinates() {
-        return xyzCoordinates;
-    }
-
 }
