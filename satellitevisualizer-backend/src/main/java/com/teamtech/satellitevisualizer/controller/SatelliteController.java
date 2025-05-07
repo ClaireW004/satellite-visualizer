@@ -11,11 +11,23 @@ package com.teamtech.satellitevisualizer.controller;
 import com.teamtech.satellitevisualizer.models.SatelliteData;
 import com.teamtech.satellitevisualizer.service.SatelliteService;
 import com.teamtech.satellitevisualizer.service.SatellitePositionService;
+import org.orekit.frames.Frame;
+import org.orekit.frames.FramesFactory;
+import org.orekit.orbits.Orbit;
+import org.orekit.propagation.SpacecraftState;
+import org.orekit.propagation.analytical.KeplerianPropagator;
+import org.orekit.propagation.events.EventDetector;
+import org.orekit.time.AbsoluteDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -68,6 +80,55 @@ public class SatelliteController {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("error", "Satellite not found!");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        }
+    }
+
+    @CrossOrigin(origins = "http://localhost:3000")
+    @GetMapping("/{noradId}/czml")
+    public ResponseEntity<String> getCzml(@PathVariable int noradId) {
+        try {
+            // Retrieve TLE data using existing logic
+            SatelliteData satellite = satelliteService.getSatelliteBySatid(noradId);
+            if (satellite == null || satellite.getTle() == null || satellite.getTle().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("TLE not found for: " + noradId);
+            }
+
+            String tleData = satellite.getTle();
+            List<SpacecraftState> states = new ArrayList<>();
+            // gravitational parameter for Earth
+			double MU = 3.986004418e14;
+
+			EventDetector detector = satellitePositionService.setupDetector();
+            AbsoluteDate initialDate = AbsoluteDate.J2000_EPOCH;
+            Frame inertialFrame = FramesFactory.getEME2000();
+            Orbit initialOrbit = satellitePositionService.createInitialOrbit(tleData, inertialFrame, initialDate, MU);
+            KeplerianPropagator propagator = new KeplerianPropagator(initialOrbit);
+            propagator.addEventDetector(detector);
+
+			// Propagate orbit for 90 minutes
+			AbsoluteDate finalDate = initialDate.shiftedBy(90.0 * 60.0);
+			SpacecraftState currentState = propagator.getInitialState();
+			while (currentState.getDate().compareTo(finalDate) <= 0) {
+				states.add(currentState);
+                // Propagate every 60 seconds
+				currentState = propagator.propagate(currentState.getDate().shiftedBy(60));
+			}
+			// Write propagated orbit to CZML file
+			satellitePositionService.writeCZML(initialDate, finalDate, states);
+            Path filePath = Paths.get("orbit.czml");
+            if (!Files.exists(filePath)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("CZML file not found for: " + noradId);
+            }
+
+            String czmlContent = Files.readString(filePath);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(czmlContent);
+
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to load CZML: " + e.getMessage());
         }
     }
 }
