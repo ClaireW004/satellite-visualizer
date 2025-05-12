@@ -201,6 +201,14 @@ input::placeholder {
   width: 250px
 }
 
+.visibility-display {
+  margin-top: 10px;
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 20px;
+  border-radius: 10px;
+  width: 250px
+}
+
 .message-box {
   background-color: #30343c;
   padding: 15px;
@@ -241,4 +249,21 @@ input::placeholder {
   to {
     transform: rotate(360deg);
   }
+}
+
+footer {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 300px;
+  text-align: center;
+  padding: 10px;
+  /* height: 26vh;
+  margin-bottom: 100px; */
+}
+
+footer p {
+  margin-right: -55px;
+  text-align: center;
+  color: white
 }
