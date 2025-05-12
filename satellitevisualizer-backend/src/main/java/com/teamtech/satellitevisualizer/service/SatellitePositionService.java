@@ -240,13 +240,17 @@ public class SatellitePositionService {
         var cosLon = FastMath.cos(longitude * FastMath.PI / 180.0);
         var sinLon = FastMath.sin(longitude * FastMath.PI / 180.0);
         var rad = 6378137.0;
-        var f = 1.0 / 298.257224;
+//        var f = 1.0 / 298.257224;
+        var f = parseEccentricity(getLine2(satelliteData.getTle()));
         var C = 1.0 / FastMath.sqrt(cosLat * cosLat + (1 - f) * (1 - f) * sinLat * sinLat);
         var S = (1.0 - f) * (1.0 - f) * C;
-        var h = 0.0;
-        double x = (rad * C + h) * cosLat * cosLon;
-        double y = (rad * C + h) * cosLat * sinLon;
-        double z = (rad * S + h) * sinLat;
+        var h = altitudeKm * 1000.0;
+//        double x = (rad * C + h) * cosLat * cosLon;
+//        double y = (rad * C + h) * cosLat * sinLon;
+//        double z = (rad * S + h) * sinLat;
+        double x = rad * cosLat * cosLon;
+        double y = rad * cosLat * sinLon;
+        double z = rad * sinLat;
 
         System.out.printf("x: %.2f\n", x);
         System.out.printf("y: %.2f\n", y);
@@ -268,12 +272,12 @@ public class SatellitePositionService {
         OneAxisEllipsoid earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
                 Constants.WGS84_EARTH_FLATTENING,
                 FramesFactory.getITRF(IERSConventions.IERS_2010, true));
-        GeodeticPoint charlottesville = new GeodeticPoint(Math.toRadians(38.0293), Math.toRadians(-78.4767), 0.0);
-        TopocentricFrame charlottesvilleFrame = new TopocentricFrame(earth, charlottesville, "Charlottesville");
+        GeodeticPoint sarasota = new GeodeticPoint(Math.toRadians(27.3365), Math.toRadians(-82.5310), 0.0);
+        TopocentricFrame sarasotaFrame = new TopocentricFrame(earth, sarasota, "Sarasota");
         double maxcheck = 60.0;
         double threshold = 0.001;
         double elevation = Math.toRadians(5.0);
-        EventDetector detector = new ElevationDetector(maxcheck, threshold, charlottesvilleFrame).
+        EventDetector detector = new ElevationDetector(maxcheck, threshold, sarasotaFrame).
                 withConstantElevation(elevation).
                 withHandler(new EventHandler() {
                     @Override
@@ -302,12 +306,13 @@ public class SatellitePositionService {
         String line1 = getLine1(tleData);
         String line2 = getLine2(tleData);
 
-        double a = 6378137.0;
         double e = parseEccentricity(line2);
         double i = parseInclination(line2);
         double omega = parsePerigee(line2);
         double raan = parseRightAscension(line2);
         double lM = parseMeanAnomaly(line2);
+//        double a = Math.pow((mu / Math.pow((2 * Math.PI * lM / 86400), 2)), 1.0 / 3.0);
+        double a = 6378137.0;
 
         return new KeplerianOrbit(a, e, i, omega, raan, lM, PositionAngle.MEAN, inertialFrame, initialDate, mu);
     }
@@ -328,7 +333,7 @@ public class SatellitePositionService {
      *
      * @throws IOException If an I/O error occurs while writing to the file.
      */
-    public void writeCZML(AbsoluteDate initialDate, AbsoluteDate finalDate, List<SpacecraftState> states) {
+    public void writeCZML(AbsoluteDate initialDate, AbsoluteDate finalDate, List<SpacecraftState> states, int noradId) {
         try (FileWriter writer = new FileWriter("orbit.czml")) {
             // Write the CZML header
             writer.write("[\n");
@@ -351,7 +356,8 @@ public class SatellitePositionService {
             // Write the CZML footer
             writer.write("\n]},\n");
             writer.write("\"path\":{\"show\":[{\"boolean\":true}]},\n");
-            writer.write("\"point\":{\"pixelSize\":5,\"color\":{\"rgba\":[255,255,0,255]}}}\n");
+            writer.write("\"point\":{\"pixelSize\":5,\"color\":{\"rgba\":[255,255,0,255]}},\n");
+            writer.write("\"description\":\"Satellite " + noradId + "\"}\n");
             writer.write("]\n");
         } catch (IOException e2) {
             e2.printStackTrace();
