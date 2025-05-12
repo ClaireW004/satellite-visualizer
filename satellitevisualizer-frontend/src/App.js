@@ -9,7 +9,6 @@ Cesium.Ion.defaultAccessToken = process.env.REACT_APP_CESIUM_ACCESS_TOKEN;
 console.log('Access Token:', process.env.REACT_APP_CESIUM_ACCESS_TOKEN);
 
 const App = () => {
-    // const noradId = 25544; // example norad id for the iss
     const [noradId, setNoradId] = React.useState(25544)
     const [inputNorad1, setinputNorad1] = useState('');
     const [inputNorad2, setinputNorad2] = useState('');
@@ -18,12 +17,13 @@ const App = () => {
     const [currentLLA2, setCurrentLLA2] = useState({ latitude: 0, longitude: 0, altitude: 0 });
     const [error, setError] = useState("");
     const [submitted, setSubmitted] = useState(false);
+    const [visibilityResult, setVisibilityResult] = useState("");
 
     const viewerRef = useRef(null);
 
     const fetchTLEandLLA = async (noradId, setLLA) => {
         try {
-            const response = await axios.get(`http://localhost:8080/api/satellite/${noradId}/tle`);
+            let response = await axios.get(`http://localhost:8080/api/satellite/${noradId}/tle`);
             console.log(response.data);
 
             const llaArray = response.data.currentLLA;
@@ -31,23 +31,44 @@ const App = () => {
             console.log("lla lat ", llaArray[0][0]);
             console.log("lla lon ", llaArray[0][1]);
             console.log("lla alt ", llaArray[0][2]);
-            if (llaArray[0].length === 3) {
-
-                const llaObject = {
+            if (llaArray && llaArray[0].length === 3) {
+                setLLA({
                     latitude: llaArray[0][0],
                     longitude: llaArray[0][1],
                     altitude: llaArray[0][2]
-                };
-                console.log("lla object ", llaObject);
-                setLLA(llaObject);
-            } else {
-                setLLA({ latitude: 0, longitude: 0, altitude: 0 });
+                });
             }
 
             setTle(response.data.tle);
             setError('');
         } catch (err) {
-            setError('Failed to fetch TLE data. Satellite not found or server error.');
+            if (err.response && err.response.status === 404) {
+                try {
+                    console.log("TLE not found. Fetching and saving new TLE...");
+                    await axios.get(`http://localhost:8080/api/satellite/fetch-and-save/${noradId}`);
+
+                    let response = await axios.get(`http://localhost:8080/api/satellite/${noradId}/tle`);
+                    console.log("TLE fetched after save:", response.data);
+
+                    const llaArray = response.data.currentLLA;
+                    if (llaArray && llaArray[0].length === 3) {
+                        setLLA({
+                            latitude: llaArray[0][0],
+                            longitude: llaArray[0][1],
+                            altitude: llaArray[0][2]
+                        });
+                    }
+
+                    setTle(response.data.tle);
+                    setError('');
+                } catch (fetchErr) {
+                    setError('Failed to fetch and save new TLE data.');
+                    console.error(fetchErr);
+                }
+            } else {
+                setError('Failed to fetch TLE data. Satellite not found or server error.');
+                console.error(err);
+            }
         }
     };
 
@@ -91,6 +112,11 @@ const App = () => {
                     czmlSource2.load(czml2);
                     console.log("loaded czml 2");
                 }
+
+                const visibleResponse = await fetch(`http://localhost:8080/api/satellite/${parsedId1}/${parsedId2}/visible-check`);
+                const visibleText = await visibleResponse.text();
+                setVisibilityResult(visibleText);
+                console.log("visibility result fetched")
             } catch (error) {
                 console.error("Error fetching LLA:", error);
             }
@@ -191,12 +217,21 @@ const App = () => {
                         </div>
                     )}
                 </div>
+                <div className="info-container">
+                    <div className="visibility-display">
+                        <h3>Visibility Result</h3>
+                        <p>{visibilityResult}</p>
+                    </div>
+                </div>
             </div>
             <div className="viewer-container">
                 <Viewer ref={viewerRef} homeButton={false}>
 
                 </Viewer>
             </div>
+            <footer>
+                <p><em>Made by UF Team Tech 2025</em></p>
+            </footer>
         </div >
     );
 };
