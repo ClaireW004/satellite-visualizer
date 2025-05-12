@@ -75,6 +75,9 @@ public class SatelliteController {
             SatelliteData updatedSatellite = satellitePositionService.getCurrentLLA(noradId);
             response.put("currentLLA", updatedSatellite.getGeodeticCoordinates());
 
+            SatelliteData xyzUpdatedSatellite = satellitePositionService.getXYZ(updatedSatellite.getSatid());
+            response.put("currentXYZ", xyzUpdatedSatellite.getXyzCoordinates());
+
             return ResponseEntity.ok(response);
         } else {
             Map<String, Object> errorResponse = new HashMap<>();
@@ -115,7 +118,7 @@ public class SatelliteController {
 				currentState = propagator.propagate(currentState.getDate().shiftedBy(60));
 			}
 			// Write propagated orbit to CZML file
-			satellitePositionService.writeCZML(initialDate, finalDate, states);
+			satellitePositionService.writeCZML(initialDate, finalDate, states, noradId);
             Path filePath = Paths.get("orbit.czml");
             if (!Files.exists(filePath)) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("CZML file not found for: " + noradId);
@@ -129,6 +132,28 @@ public class SatelliteController {
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Failed to load CZML: " + e.getMessage());
+        }
+    }
+
+    @CrossOrigin(origins = "http://localhost:3000")
+    @GetMapping("/{noradId1}/{noradId2}/visible-check")
+    public ResponseEntity<String> getVisibility(@PathVariable int noradId1, @PathVariable int noradId2) {
+        try {
+            SatelliteData satellite1 = satelliteService.getSatelliteBySatid(noradId1);
+            SatelliteData satellite2 = satelliteService.getSatelliteBySatid(noradId2);
+
+            if (satellite1 == null || satellite2 == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Satellite(s) not found!");
+            }
+
+            // Check visibility
+            boolean isVisible = satellitePositionService.isVisible(noradId1, noradId2);
+            return ResponseEntity.ok("Visibility: " + isVisible);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error checking visibility: " + e.getMessage());
         }
     }
 }
