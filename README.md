@@ -1,51 +1,39 @@
 # satellite-visualizer
 
-## How to Run:
+## About
+Satellite Visualizer is a web application that provides real-time satellite visualization, allowing users to track satellites using their NORAD ID and view their orbits dynamically over time. It integrates Java and Spring Boot on the backend to fetch satellite data via the [N2YO API](https://www.n2yo.com/), calculates geodetic coordinates, and stores satellite information in a MongoDB database. The frontend, built with React and CesiumJS, enables users to input satellite IDs and visualize their trajectories over time.
 
+## Tech Stack
+### Backend
+- **Java** – Core logic and calculations
+- **Spring Boot** – REST API implementation and data retrieval
+- **MongoDB** – Database for satellite records and attributes
+- **N2YO API** – Satellite TLE data source
+
+### Frontend
+- **React** – UI and component-based interaction
+- **CesiumJS** – 3D visualization and orbital tracking
+
+## How to Run:
 ### Setting Up MongoDB
 1. Login to your MongoDB account [here](https://account.mongodb.com/account/login).
-2. Look for a popup to add your current IP address, and click **Add Current IP Address**.
-   
-   ![image](https://github.com/user-attachments/assets/115d8910-2c2a-4b16-b072-d188f0c10f5c)
-   
-3. Navigate to the MongoDBCompass application on your computer, and click the **Add New Connection** button.
-
-   <img src="https://github.com/user-attachments/assets/8210825a-1f50-475e-8fa3-61504fd94f87" width="350"/>
-   
-5. Enter the connection string (ask Claire for db_password and replace this, delete brackets): **mongodb+srv://TeamTech:<db_password>@cluster0.5qgsy.mongodb.net/**
-
-   <img src="https://github.com/user-attachments/assets/6729de1c-ad6d-48c2-b5ba-815e7a40b098" width="350"/>
-   
-7. Click **Save** and **Connect**.
-
-   ![image](https://github.com/user-attachments/assets/778840bd-7df4-40c3-96ce-1f3e6fbed872)
-   
-9. You should now be able to see the satellites collection.
-
-   ![image](https://github.com/user-attachments/assets/fc2d6ad5-9499-44e8-a399-61305872ec4a)
-   
+2. Look for a popup to add your current IP address, and click **Add Current IP Address**.   
+3. Navigate to the MongoDBCompass application on your computer, and click the **Add New Connection** button.   
+4. Enter the connection string (ask Claire for db_password and replace this, delete brackets): **mongodb+srv://TeamTech:<db_password>@cluster0.5qgsy.mongodb.net/**   
+5. Click **Save** and **Connect**.   
+6. You should now be able to see the satellites collection.   
 
 ### Run the Backend
-7. Open IntelliJ on your computer, and click **New Project** on the Welcome screen. Navigate to the location where the satellite-visualizer was cloned, and click on **satellitevisualizer-backend** then OK.
-
-   ![image](https://github.com/user-attachments/assets/5d16065a-f39c-4231-aa29-0adddde386e4)
-
-   
-8. Click **Run** (green triangle in top right).
-9. To test out the _N2YO API_, you can enter this URL in your browser: **https://api.n2yo.com/rest/v1/satellite/tle/{noradId}&apiKey=your-api-key**.
-   Replace **{noradId}** with any satellite's noradId, like 25544 for the ISS, and **your-api-key** with your own N2YO API key. If you do not have one, you can sign up for an account on the **N2YO** website. The result should look something like this:
-
-   ![image](https://github.com/user-attachments/assets/81c3dc5e-29a7-4a2f-a9c7-09aeefce7034)
+1. Open IntelliJ on your computer, and click **New Project** on the Welcome screen. Navigate to the location where the satellite-visualizer was cloned, and click on **satellitevisualizer-backend** then OK.
+2. Click **Run** (green triangle in top right).
+3. To test out the _N2YO API_, you can enter this URL in your browser: **https://api.n2yo.com/rest/v1/satellite/tle/{noradId}&apiKey=your-api-key**.
+   Replace **{noradId}** with any satellite's noradId, like 25544 for the ISS, and **your-api-key** with your own N2YO API key. If you do not have one, you can sign up for an account on the **N2YO** website. 
 
    To test out the _Spring Boot Endpoint_, you can enter this URL: **http://localhost:8080/api/satellite/fetch-and-save/{noradId}**. Don't forget to also replace the **{noradId}**.
 
-   ![image](https://github.com/user-attachments/assets/2a7d9d78-748b-4201-bedd-e94b90b55077)
-   
-11. If you used the second URL, you can go back to **MongoDBCompass** and you should see that satellite data saved as a document.
-
-    ![image](https://github.com/user-attachments/assets/ced2136d-e22d-42a7-af16-9a9ed4bd25f9)
-
-
 ### Run the Frontend
-11. Open VS Code and click _File > Open Folder_ and navigate to the location where the satellite-visualizer was cloned, and click on **satellitevisualizer-frontend**.
-12. Open the terminal by clicking _View > Terminal_, and run **npm start**.
+1. Open VS Code and click _File > Open Folder_ and navigate to the location where the satellite-visualizer was cloned, and click on **satellitevisualizer-frontend**.
+2. Open the terminal by clicking _View > Terminal_, and run **npm start**.
+
+## Contributing
+Thank you for your interest! We welcome all improvements to this project to make it more useful to users. Check out the Contribution Guide for instructions on how to contirbute.
