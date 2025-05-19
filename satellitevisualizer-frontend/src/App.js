@@ -88,6 +88,12 @@ const App = () => {
         if (!isNaN(parsedId1) && !isNaN(parsedId2)) {
             setSubmitted(true);
             try {
+                const viewer = viewerRef.current?.cesiumElement;
+                if (viewer) {
+                    viewer.dataSources.removeAll();
+                    console.log("Cleared Cesium viewer");
+                }
+
                 await fetchTLEandLLA(parsedId1, setCurrentLLA1);
                 await fetchTLEandLLA(parsedId2, setCurrentLLA2);
                 console.log("LLAs updated");
@@ -96,7 +102,7 @@ const App = () => {
                 const czml1 = await res1.json();
 
                 const czmlSource1 = new Cesium.CzmlDataSource();
-                const viewer = viewerRef.current?.cesiumElement;
+                
                 if (viewer) {
                     viewer.dataSources.add(czmlSource1);
                     czmlSource1.load(czml1);
