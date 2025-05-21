@@ -1,9 +1,9 @@
-/*
-SatelliteController handles the incoming HTTP requests, which will primarily be the REST API endpoints
-to fetch and save TLE data to the MongoDB repository.
-
-@RestController indicates that this class is a RESTful web service controller.
-@RequestMapping("/api/satellite") is the base URL path for accessing all endpoints in this controller.
+/**
+ * SatelliteController handles the incoming HTTP requests, which will primarily be the REST API endpoints
+ * to fetch and save TLE data to the MongoDB repository.
+ *
+ * @RestController indicates that this class is a RESTful web service controller.
+ * @RequestMapping("/api/satellite") is the base URL path for accessing all endpoints in this controller.
  */
 
 package com.teamtech.satellitevisualizer.controller;
@@ -11,13 +11,17 @@ package com.teamtech.satellitevisualizer.controller;
 import com.teamtech.satellitevisualizer.models.SatelliteData;
 import com.teamtech.satellitevisualizer.service.SatelliteService;
 import com.teamtech.satellitevisualizer.service.SatellitePositionService;
-import org.orekit.frames.Frame;
+import org.orekit.bodies.BodyShape;
+import org.orekit.bodies.OneAxisEllipsoid;
 import org.orekit.frames.FramesFactory;
-import org.orekit.orbits.Orbit;
+import org.orekit.propagation.Propagator;
 import org.orekit.propagation.SpacecraftState;
-import org.orekit.propagation.analytical.KeplerianPropagator;
-import org.orekit.propagation.events.EventDetector;
+import org.orekit.propagation.analytical.tle.TLE;
+import org.orekit.propagation.analytical.tle.TLEPropagator;
 import org.orekit.time.AbsoluteDate;
+import org.orekit.time.TimeScalesFactory;
+import org.orekit.utils.Constants;
+import org.orekit.utils.IERSConventions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -28,6 +32,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,10 +51,11 @@ public class SatelliteController {
     @Autowired
     private SatellitePositionService satellitePositionService;
 
-    /*
-    Fetches and saves TLE data based on its NORAD ID
-    Returns a SatelliteData object
-    Throws RuntimeException if fetch and save fails
+    /**
+     * Fetches TLE data for a satellite based on its NORAD ID
+     * @param noradId the NORAD ID of the satellite
+     * @return SatelliteResponse object containing TLE data
+     * @throws RuntimeException if TLE fetch fails
      */
     @GetMapping("/fetch-and-save/{noradId}")
     public SatelliteData fetchAndSaveTLE(@PathVariable int noradId) {
@@ -57,10 +66,10 @@ public class SatelliteController {
         }
     }
 
-    /*
-    Retrieves the TLE data for a satellite based on its NORAD ID from MongoDB repository
-    Returns a ResponseEntity<String> containing the TLE data or a 404 status if satellite is not found
-    @CrossOrigin tag allows cross-origin request to be made from our frontend side http://localhost:3000
+    /**
+     * Retrieves the TLE data for a satellite based on its NORAD ID from MongoDB repository
+     * @return ResponseEntity<String> containing the TLE data or a 404 status if satellite is not found
+     * @CrossOrigin tag allows cross-origin request to be made from our frontend side http://localhost:3000
      */
     @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping("/{noradId}/tle")
@@ -86,6 +95,16 @@ public class SatelliteController {
         }
     }
 
+    private static final BodyShape EARTH = new OneAxisEllipsoid(
+            Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
+            Constants.WGS84_EARTH_FLATTENING,
+            FramesFactory.getITRF(IERSConventions.IERS_2010, true));
+
+    /**
+     * Generates a CZML file for a satellite's orbit based on its NORAD ID
+     * @param noradId of the satellite
+     * @return ResponseEntity<String> containing the CZML data or a 404 status if satellite is not found
+     */
     @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping("/{noradId}/czml")
     public ResponseEntity<String> getCzml(@PathVariable int noradId) {
@@ -98,27 +117,33 @@ public class SatelliteController {
             }
 
             String tleData = satellite.getTle();
-            List<SpacecraftState> states = new ArrayList<>();
-            // gravitational parameter for Earth
-			double MU = 3.986004418e14;
+            List<List<Double>> states = new ArrayList<>();
 
-			EventDetector detector = satellitePositionService.setupDetector();
-            AbsoluteDate initialDate = AbsoluteDate.J2000_EPOCH;
-            Frame inertialFrame = FramesFactory.getEME2000();
-            Orbit initialOrbit = satellitePositionService.createInitialOrbit(tleData, inertialFrame, initialDate, MU);
-            KeplerianPropagator propagator = new KeplerianPropagator(initialOrbit);
-            propagator.addEventDetector(detector);
+            String[] tleLines = tleData.split("\\r\\n");
+            Propagator propagator = TLEPropagator.selectExtrapolator(new TLE(tleLines[0], tleLines[1]));
 
-			// Propagate orbit for 90 minutes
-			AbsoluteDate finalDate = initialDate.shiftedBy(90.0 * 60.0);
-			SpacecraftState currentState = propagator.getInitialState();
-			while (currentState.getDate().compareTo(finalDate) <= 0) {
-				states.add(currentState);
+            // Propagate orbit for 90 minutes
+            OffsetDateTime now = Instant.now().atOffset(ZoneOffset.UTC);
+            OffsetDateTime nowPlus90Min = now.plus(Duration.ofMinutes(90));
+            AbsoluteDate nowAbsolute = new AbsoluteDate(now.getYear(), now.getMonthValue(), now.getDayOfMonth(), now.getHour(), now.getMinute(),
+                    now.getSecond(), TimeScalesFactory.getUTC());
+            AbsoluteDate finalDate = new AbsoluteDate(nowPlus90Min.getYear(), nowPlus90Min.getMonthValue(), nowPlus90Min.getDayOfMonth(),
+                    nowPlus90Min.getHour(), nowPlus90Min.getMinute(), nowPlus90Min.getSecond(), TimeScalesFactory.getUTC());
+            AbsoluteDate currentTime = nowAbsolute;
+            double offset = 0;
+            while (currentTime.compareTo(finalDate) <= 0) {
+                SpacecraftState state = propagator.propagate(currentTime);
+
+                List<Double> cartesianLla = satellitePositionService.convertToCartesian(EARTH.transform(state.getPVCoordinates().getPosition(),
+                        FramesFactory.getEME2000(), currentTime));
+                cartesianLla.set(0, offset);
+                states.add(cartesianLla);
                 // Propagate every 60 seconds
-				currentState = propagator.propagate(currentState.getDate().shiftedBy(60));
-			}
-			// Write propagated orbit to CZML file
-			satellitePositionService.writeCZML(initialDate, finalDate, states, noradId);
+                offset += 60;
+                currentTime = currentTime.shiftedBy(60);
+            }
+            // Write propagated orbit to CZML file
+            satellitePositionService.writeCZML(nowAbsolute, finalDate, states, noradId);
             Path filePath = Paths.get("orbit.czml");
             if (!Files.exists(filePath)) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("CZML file not found for: " + noradId);
@@ -135,6 +160,12 @@ public class SatelliteController {
         }
     }
 
+    /**
+     * Checks if two satellites are visible to each other based on their NORAD IDs
+     * @param noradId1 the NORAD ID of the first satellite
+     * @param noradId2 the NORAD ID of the second satellite
+     * @return ResponseEntity<String> containing visibility status or a 404 status if either satellite is not found
+     */
     @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping("/{noradId1}/{noradId2}/visible-check")
     public ResponseEntity<String> getVisibility(@PathVariable int noradId1, @PathVariable int noradId2) {

@@ -1,9 +1,9 @@
-/*
-SatelliteService handles the logic for interacting with the N2YO API.
-It contains methods to fetch TLE data from the API and optionally save it to the database
-
-@Service tag indicates that this class is a service component of the application, which contains the core logic.
-@Autowired annotation is used for dependency injection for SatelliteRepository interface.
+/**
+ * SatelliteService handles the logic for interacting with the N2YO API.
+ * It contains methods to fetch TLE data from the API and optionally save it to the database
+ *
+ * @Service tag indicates that this class is a service component of the application, which contains the core logic.
+ * @Autowired annotation is used for dependency injection for SatelliteRepository interface.
  */
 
 package com.teamtech.satellitevisualizer.service;
@@ -35,18 +35,20 @@ public class SatelliteService {
         this.satelliteRepository = satelliteRepository;
     }
 
-    /*
-    Retrieves a SatelliteData object from MongoDB database based on the satellite's NORAD ID
-    Returns the SatelliteData objects
+    /**
+     * Retrieves a SatelliteData object from MongoDB database based on the satellite's NORAD ID
+     * @param noradId the NORAD ID of the satellite
+     * @return SatelliteData object
      */
-    public SatelliteData getSatelliteBySatid(int satid) {
-        return satelliteRepository.findBySatid(satid);
+    public SatelliteData getSatelliteBySatid(int noradId) {
+        return satelliteRepository.findBySatid(noradId);
     }
 
-    /*
-    Fetches TLE data for a satellite from N2YO API
-    Returns a SatelliteResponse
-    Throws exception if TLE fetch fails
+    /**
+     * Fetches TLE data for a satellite from N2YO API
+     * @param noradId the NORAD ID of the satellite
+     * @return SatelliteResponse
+     * @throws @exception if TLE fetch fails
      */
     public SatelliteResponse getSatelliteTLE(int noradId) throws Exception {
         String url = BASE_URL + noradId + "?apiKey=" + API_KEY;
@@ -58,19 +60,21 @@ public class SatelliteService {
         return objectMapper.readValue(response.getBody(), SatelliteResponse.class);
     }
 
-    /*
-    Saves satellite data in MongoDB
-    Returns a SatelliteData object
+    /**
+     * Saves satellite data in MongoDB
+     * @param satellite the SatelliteData object to be saved
+     * @return SatelliteData object
      */
     public SatelliteData saveSatelliteData(SatelliteData satellite) {
         System.out.println("Saving satellite: " + satellite);
         return satelliteRepository.save(satellite);
     }
 
-    /*
-    Fetches TLE from the N2YO API, creates SatelliteData object based on norad ID, and saves that to MongoDB database
-    Returns a SatelliteData object
-    Throws exception if TLE fetch fails
+    /**
+     * Fetches TLE from the N2YO API, creates SatelliteData object based on norad ID, and saves that to MongoDB database
+     * @param noradId the NORAD ID of the satellite
+     * @return SatelliteData object
+     * @throws @exception if TLE fetch fails
      */
     public SatelliteData fetchAndSaveTLE(int noradId) throws Exception {
         System.out.println("Fetching and saving TLE for NORAD ID: " + noradId);
