@@ -1,3 +1,9 @@
+/**
+ * SatellitePositionService handles the logic for interacting with the N2YO API.
+ *  It contains methods to compute a satellite's geodetic coordinates based on its TLE and write its propagated orbit
+ *  to a CZML file, which can be used to visualize the satellite's orbit in CesiumJS.
+ */
+
 package com.teamtech.satellitevisualizer.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -40,6 +46,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -55,13 +62,21 @@ public class SatellitePositionService {
     @Autowired
     private SatelliteRepository satelliteRepository;
 
+    /**
+     * Loads Orekit data from the specified directory.
+     * This method is called to initialize the Orekit library with the necessary data files.
+     */
     private void loadOrekitData() {
         File orekitData = new File("src/main/resources/orekit-data");
         DataProvidersManager manager = DataContext.getDefault().getDataProvidersManager();
         manager.addProvider(new DirectoryCrawler(orekitData));
     }
 
-    // separates a tle string into two lines
+    /**
+     * Separates a tle string into two lines and constructs a TLE object out of them.
+     * @param tleData The TLE data of the satellite.
+     * @return A TLE object containing the two separated lines of a TLE string.
+     */
     public static Optional<TLE> parseTLE(String tleData) {
         // blank data
         if (tleData == null || tleData.isBlank()) return Optional.empty();
@@ -108,6 +123,11 @@ public class SatellitePositionService {
         return lines[1].trim();
     }
 
+    /**
+     * Fetches TLE data for a satellite from the database based on its NORAD ID.
+     * @param satId The satellite NORAD ID.
+     * @return An Optional containing the TLE object if found, or an empty Optional if not found.
+     */
     public Optional<TLE> fetchTLE(int satId) {
         System.out.println("satId: " + satId);
         SatelliteData satelliteData = satelliteRepository.findBySatid(satId);
@@ -219,6 +239,11 @@ public class SatellitePositionService {
         }
     }
 
+    /**
+     * Computes the cartesian coordinates of a satellite based on its geodetic coordinates.
+     * @param satId The satellite norad ID.
+     * @return A SatelliteData object containing the cartesian coordinates.
+     */
     public SatelliteData getXYZ(int satId) {
         double latitude=0, longitude=0, altitudeKm=0;
         SatelliteData satelliteData = satelliteRepository.findBySatid(satId);
@@ -241,10 +266,14 @@ public class SatellitePositionService {
         var sinLon = FastMath.sin(longitude * FastMath.PI / 180.0);
         var rad = 6378137.0;
 //        var f = 1.0 / 298.257224;
+        // flattening factor for using an ellipsoidal model of Earth
         var f = parseEccentricity(getLine2(satelliteData.getTle()));
+        // used to compute the normal radius at the given latitude
         var C = 1.0 / FastMath.sqrt(cosLat * cosLat + (1 - f) * (1 - f) * sinLat * sinLat);
+        // adjust the height for the vertical (z) component
         var S = (1.0 - f) * (1.0 - f) * C;
-        var h = altitudeKm * 1000.0;
+        var h = altitudeKm;
+        // transform geodetic coordinates into ECEF coordinates
 //        double x = (rad * C + h) * cosLat * cosLon;
 //        double y = (rad * C + h) * cosLat * sinLon;
 //        double z = (rad * S + h) * sinLat;
@@ -264,57 +293,31 @@ public class SatellitePositionService {
     }
 
     /**
-     * Sets up an event detector for the satellite propagation.
-     * The detector triggers an event when the satellite's elevation above the horizon at a specific location exceeds a certain threshold.
-     * @return the event detector
+     * Converts geodetic coordinates to Cartesian coordinates.
+     * @param geodeticPoint The geodetic point containing latitude, longitude, and altitude.
+     * @return A list of Cartesian coordinates (x, y, z).
      */
-    public EventDetector setupDetector() {
-        OneAxisEllipsoid earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
-                Constants.WGS84_EARTH_FLATTENING,
-                FramesFactory.getITRF(IERSConventions.IERS_2010, true));
-        GeodeticPoint sarasota = new GeodeticPoint(Math.toRadians(27.3365), Math.toRadians(-82.5310), 0.0);
-        TopocentricFrame sarasotaFrame = new TopocentricFrame(earth, sarasota, "Sarasota");
-        double maxcheck = 60.0;
-        double threshold = 0.001;
-        double elevation = Math.toRadians(5.0);
-        EventDetector detector = new ElevationDetector(maxcheck, threshold, sarasotaFrame).
-                withConstantElevation(elevation).
-                withHandler(new EventHandler() {
-                    @Override
-                    public Action eventOccurred(SpacecraftState spacecraftState, EventDetector eventDetector, boolean b) {
-                        System.out.println("BANG! ->" + spacecraftState.getDate().toString() + " : " + spacecraftState.getOrbit().getPVCoordinates().toString());
-                        return Action.CONTINUE;
-                    }
-                });
-        return detector;
-    }
+    public List<Double> convertToCartesian(GeodeticPoint geodeticPoint) {
+        double a = Constants.WGS84_EARTH_EQUATORIAL_RADIUS; // semi-major axis
+        double f = Constants.WGS84_EARTH_FLATTENING;
+        double e2 = 2 * f - f * f; // first eccentricity squared
 
-    /**
-     * Creates the initial orbit for the satellite propagation.
-     * a - the semi-major axis
-     * e - the eccentricity
-     * i - the inclination
-     * omega - the perigee argument
-     * raan - the right ascension of the ascending node
-     * lM - the mean anomaly
-     * inertialFrame - the frame in which the orbit is defined
-     * initialDate - the date at which the orbit is defined
-     * mu - the gravitational parameter
-     * @return the initial orbit
-     */
-    public Orbit createInitialOrbit(String tleData, Frame inertialFrame, AbsoluteDate initialDate, double mu) {
-        String line1 = getLine1(tleData);
-        String line2 = getLine2(tleData);
+        double lat = geodeticPoint.getLatitude();
+        double lon = geodeticPoint.getLongitude();
+        double alt = geodeticPoint.getAltitude();
 
-        double e = parseEccentricity(line2);
-        double i = parseInclination(line2);
-        double omega = parsePerigee(line2);
-        double raan = parseRightAscension(line2);
-        double lM = parseMeanAnomaly(line2);
-//        double a = Math.pow((mu / Math.pow((2 * Math.PI * lM / 86400), 2)), 1.0 / 3.0);
-        double a = 6378137.0;
+        double cosLat = FastMath.cos(lat);
+        double sinLat = FastMath.sin(lat);
+        double cosLon = FastMath.cos(lon);
+        double sinLon = FastMath.sin(lon);
 
-        return new KeplerianOrbit(a, e, i, omega, raan, lM, PositionAngle.MEAN, inertialFrame, initialDate, mu);
+        double N = a / FastMath.sqrt(1 - e2 * sinLat * sinLat); // radius of curvature
+
+        double x = (N + alt) * cosLat * cosLon;
+        double y = (N + alt) * cosLat * sinLon;
+        double z = ((1 - e2) * N + alt) * sinLat;
+
+        return new ArrayList<>(List.of(0D, x, y, z));
     }
 
     /**
@@ -324,30 +327,28 @@ public class SatellitePositionService {
      * @param finalDate   The final date of the propagation.
      * @param states      A list of spacecraft states representing the satellite's state at different points in time.
      *                    The states must be ordered by date, from earliest to latest.
+     * @param noradId     The NORAD ID of the satellite.
      *
-     * The method generates a CZML file named "orbit.czml" in the project's root directory. The file contains the
-     * satellite's position at each time step, represented as a Cartesian coordinate (x, y, z). The positions are
+     * The method generates "orbit.czml" in the root directory of the backend project. It stores the
+     * satellite's position at each time step in Cartesian coordinate format (x, y, z). The positions are
      * interpolated using the LAGRANGE algorithm with a degree of 5.
-     *
-     * The CZML file can be used to visualize the satellite's orbit in a 3D viewer that supports CZML, such as CesiumJS.
      *
      * @throws IOException If an I/O error occurs while writing to the file.
      */
-    public void writeCZML(AbsoluteDate initialDate, AbsoluteDate finalDate, List<SpacecraftState> states, int noradId) {
+    public void writeCZML(AbsoluteDate initialDate, AbsoluteDate finalDate, List<List<Double>> states, int noradId) {
         try (FileWriter writer = new FileWriter("orbit.czml")) {
             // Write the CZML header
             writer.write("[\n");
             writer.write("{\"id\":\"document\",\"version\":\"1.0\"},\n");
 
             // Write the satellite's path
-            writer.write("{\"id\":\"satellite\",\"availability\":\"" + initialDate + "/" + finalDate + "\",\n");
+            writer.write("{\"id\":\"Satellite " + noradId + "\",\"availability\":\"" + initialDate + "/" + finalDate + "\",\n");
             writer.write("\"position\":{\"interpolationAlgorithm\":\"LAGRANGE\",\"interpolationDegree\":5,\"epoch\":\"" + initialDate + "\",\"cartesian\":[");
 
             // Write the satellite's position at each time step
             for (int i = 0; i < states.size(); i++) {
-                SpacecraftState state = states.get(i);
-                double[] position = state.getPVCoordinates().getPosition().toArray();
-                writer.write("\n" + state.getDate().durationFrom(initialDate) + "," + position[0] + "," + position[1] + "," + position[2]);
+                List<Double> offsetLla = states.get(i);
+                writer.write("\n" + offsetLla.get(0) + "," + offsetLla.get(1) + "," + offsetLla.get(2) + "," + offsetLla.get(3));
                 if (i < states.size() - 1) {
                     writer.write(",");
                 }
@@ -355,8 +356,22 @@ public class SatellitePositionService {
 
             // Write the CZML footer
             writer.write("\n]},\n");
+
+            // Write the satellite's label
+            writer.write("\"label\":{"
+                    + "\"text\":\"Sat " + noradId + "\","
+                    + "\"font\":\"14px Helvetica\","
+                    + "\"fillColor\":{\"rgba\":[255,255,0,255]},"
+                    + "\"outlineColor\":{\"rgba\":[0,0,0,255]},"
+                    + "\"outlineWidth\":2,"
+                    + "\"style\":\"FILL\","
+                    + "\"horizontalOrigin\":\"LEFT\","
+                    + "\"verticalOrigin\":\"BOTTOM\","
+                    + "\"pixelOffset\":{\"cartesian2\":[10,-10]}"
+                    + "},\n");
+
             writer.write("\"path\":{\"show\":[{\"boolean\":true}]},\n");
-            writer.write("\"point\":{\"pixelSize\":5,\"color\":{\"rgba\":[255,255,0,255]}},\n");
+            writer.write("\"point\":{\"pixelSize\":10,\"color\":{\"rgba\":[255,255,0,255]}},\n");
             writer.write("\"description\":\"Satellite " + noradId + "\"}\n");
             writer.write("]\n");
         } catch (IOException e2) {
@@ -364,6 +379,12 @@ public class SatellitePositionService {
         }
     }
 
+    /**
+     * Checks if two satellites are visible to each other based on their positions.
+     * @param satId1 The first satellite's NORAD ID.
+     * @param satId2 The second satellite's NORAD ID.
+     * @return true if the satellites are visible to each other, false otherwise.
+     */
     public boolean isVisible(int satId1, int satId2) {
         OffsetDateTime now = Instant.now().atOffset(ZoneOffset.UTC);
         int hour = now.getHour();
@@ -417,6 +438,9 @@ public class SatellitePositionService {
         return visible;
     }
 
+    /**
+     * Gets new TLE data for all satellites from the N2YO API and updates the database every 24 hours.
+     */
     @Scheduled(fixedRate = 86400000) // 24 hours in ms
     public void refreshTLEs() {
         // get all satellites from the db

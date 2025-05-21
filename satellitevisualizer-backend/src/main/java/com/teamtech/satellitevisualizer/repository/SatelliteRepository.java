@@ -1,5 +1,9 @@
-/*
-SatelliteRepository provides the database access for SatelliteData entities with Spring Data MongoDB.
+/**
+ * SatelliteRepository.java
+ * This interface defines the repository for accessing satellite data in the MongoDB database.
+ * It extends the MongoRepository interface provided by Spring Data MongoDB.
+ * The repository is annotated with @Repository to indicate that it is a Spring Data repository.
+ *
  */
 
 package com.teamtech.satellitevisualizer.repository;

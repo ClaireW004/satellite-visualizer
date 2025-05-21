@@ -1,12 +1,16 @@
-/*
-SatelliteData represents all the information about a satellite we want to store in our MongoDB database.
-
-The satid or NORAD catalog number is how satellites are identified, which is an integer ranging
-from 1 to 43235 and counting.
-
-The satname is the name of the satellite.
-
-The tle is the TLE (two-line element) of the satellite represented on a single line string.
+/**
+ * SatelliteData.java
+ * This class represents the data model for a satellite in the MongoDB database.
+ * It contains fields for the satellite ID, name, TLE (two-line element), geodetic coordinates,
+ * and XYZ coordinates.
+ * The satid or NORAD catalog number is how satellites are identified, which is an integer ranging
+ * from 1 to 43235 and counting.
+ * The tle is the TLE (two-line element) of the satellite represented on a single line string.
+ *
+ * The @Document annotation indicates that this class is a MongoDB document and specifies the collection name.
+ * The @Data annotation generates getters, setters, equals, hashCode, and toString methods automatically.
+ * The @AllArgsConstructor and @NoArgsConstructor annotations generate constructors with all arguments and no arguments respectively.
+ *
  */
 
 package com.teamtech.satellitevisualizer.models;
@@ -60,9 +64,6 @@ public class SatelliteData {
     public void setGeodeticCoordinates(List<List<Double>> geodeticCoordinates) {
         this.geodeticCoordinates = geodeticCoordinates;
     }
-
-    // Whenever we save a new satellitedata, use timestamp.now so the timestamp is set to the current time
-    // private Instant timestamp;
 
     public List<List<Double>> getXyzCoordinates() {
         return xyzCoordinates;
