@@ -12,6 +12,8 @@ const App = () => {
     const [noradId, setNoradId] = React.useState(25544)
     const [inputNorad1, setinputNorad1] = useState('');
     const [inputNorad2, setinputNorad2] = useState('');
+    const [submittedNorad1, setSubmittedNorad1] = useState('');
+    const [submittedNorad2, setSubmittedNorad2] = useState('');
     const [tle, setTle] = useState("");
     const [currentLLA1, setCurrentLLA1] = useState({ latitude: 0, longitude: 0, altitude: 0 });
     const [currentLLA2, setCurrentLLA2] = useState({ latitude: 0, longitude: 0, altitude: 0 });
@@ -87,6 +89,9 @@ const App = () => {
 
         if (!isNaN(parsedId1) && !isNaN(parsedId2)) {
             setSubmitted(true);
+            setSubmittedNorad1(parsedId1);
+            setSubmittedNorad2(parsedId2);
+
             try {
                 const viewer = viewerRef.current?.cesiumElement;
                 if (viewer) {
@@ -102,7 +107,7 @@ const App = () => {
                 const czml1 = await res1.json();
 
                 const czmlSource1 = new Cesium.CzmlDataSource();
-                
+
                 if (viewer) {
                     viewer.dataSources.add(czmlSource1);
                     czmlSource1.load(czml1);
@@ -183,11 +188,13 @@ const App = () => {
                                     padding: "10px 20px",
                                     border: "2px solid #000",
                                     borderRadius: "15px",
+                                    width: "120px",
+                                    fontSize: "14px",
                                     backgroundColor: "#fff",
                                     cursor: "pointer",
                                 }}
                             >
-                                Submit
+                                <b>Submit</b>
                             </button>
                         </div>
                     </div>
@@ -199,17 +206,82 @@ const App = () => {
                             <div className="lla-display">
                                 <h3>Current Geodetic Locations</h3>
                                 <div>
-                                    <strong>Satellite {inputNorad1 || '1'}:</strong><br />
+                                    <button
+                                        onClick={() => {
+                                            const viewer = viewerRef.current?.cesiumElement;
+                                            if (viewer && isLLAValid(currentLLA1)) {
+                                                viewer.camera.flyTo({
+                                                    destination: Cesium.Cartesian3.fromDegrees(
+                                                        currentLLA1.longitude,
+                                                        currentLLA1.latitude,
+                                                        currentLLA1.altitude * 1000
+                                                    ),
+                                                    duration: 2
+                                                });
+                                            }
+                                        }}
+                                        style={{
+                                            backgroundColor: '#696c73',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '10px',
+                                            padding: '5px 10px',
+                                            fontSize: '16px',
+                                            cursor: 'pointer',
+                                            marginTop: '8px',
+                                            marginBottom: '8px'
+                                        }}
+                                    >
+                                        <b>Satellite {submittedNorad1 || '1'}</b>
+                                    </button><br />
                                     Lat: {currentLLA1.latitude}<br />
                                     Lon: {currentLLA1.longitude}<br />
                                     Alt: {currentLLA1.altitude} km
                                 </div>
                                 <br />
                                 <div>
-                                    <strong>Satellite {inputNorad2 || '2'}:</strong><br />
-                                    Lat: {currentLLA2.latitude}<br />
-                                    Lon: {currentLLA2.longitude}<br />
-                                    Alt: {currentLLA2.altitude} km
+                                    <button
+                                        onClick={() => {
+                                            const viewer = viewerRef.current?.cesiumElement;
+                                            if (viewer && isLLAValid(currentLLA2)) {
+                                                viewer.camera.flyTo({
+                                                    destination: Cesium.Cartesian3.fromDegrees(
+                                                        currentLLA2.longitude,
+                                                        currentLLA2.latitude,
+                                                        currentLLA2.altitude * 1000
+                                                    ),
+                                                    duration: 2
+                                                });
+                                            }
+                                        }}
+                                        style={{
+                                            backgroundColor: '#696c73',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '10px',
+                                            padding: '5px 10px',
+                                            fontSize: '16px',
+                                            cursor: 'pointer',
+                                            marginTop: '8px',
+                                            marginBottom: '8px'
+                                        }}
+                                    >
+                                        <b>Satellite {submittedNorad2 || '2'}</b>
+                                    </button><br />
+                                    <p>
+                                        Lat: {currentLLA2.latitude}<br />
+                                        Lon: {currentLLA2.longitude}<br />
+                                        Alt: {currentLLA2.altitude} km
+                                    </p>
+                                    <br></br>
+                                    <h3>Visibility Result</h3>
+                                    <p>
+                                        {visibilityResult === 'Visibility: true'
+                                            ? 'These satellites are currently visible to each other.'
+                                            : visibilityResult === 'Visibility: false'
+                                                ? 'These satellites are not currently visible to each other.'
+                                                : visibilityResult}
+                                    </p>
                                 </div>
                             </div>
                         ) : (
@@ -222,12 +294,6 @@ const App = () => {
                             Enter 2 NORAD IDs in to view their geodetic locations.
                         </div>
                     )}
-                </div>
-                <div className="info-container">
-                    <div className="visibility-display">
-                        <h3>Visibility Result</h3>
-                        <p>{visibilityResult}</p>
-                    </div>
                 </div>
             </div>
             <div className="viewer-container">

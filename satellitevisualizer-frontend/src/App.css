@@ -40,20 +40,25 @@ html, body, #root {
   display: flex;
   height: 100vh;
   width: 100vw;
+  flex-direction: row;
+  overflow: hidden;
 }
 
 .sidebar {
-  width: 300px;
+  /* width: 300px; */
   min-width: 250px;
   max-width: 350px;
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  /* justify-content: flex-start; */
   align-items: center;
   padding: 20px;
   background-color: #232730;
   overflow-y: auto;
+  overflow: hidden;
+  max-height: calc(100vh - 80px);
+  padding-bottom: 40px;
 }
 
 .logo-title {
@@ -126,26 +131,6 @@ html, body, #root {
   
 }
 
-.sidebar h1 {
-  text-align: center; 
-  font-size: 45px;
-  color: white;
-  margin-top: 10px; /* Adjust spacing between logo and text */
-  letter-spacing: -3px;  
-}
-
-.title-text {
-  display: flex;
-  flex-direction: column; /* Ensure "Satellite" is above "Visualizer" */
-  line-height: 0.8; /* Adjust line height for better spacing */
-  text-align: right;
-  line-height: 1.1;
-  color: white;
-  font-size: 4px;
-  letter-spacing: -3px;
-  flex-wrap: nowrap;
-}
-
 .satellite-text {
   font-size: 45px;
   margin-right: -55px;
@@ -171,7 +156,8 @@ html, body, #root {
   padding: 18px;
   border-top-right-radius: 0px; 
   border-bottom-right-radius: 0px;
-  font-size:80%;
+  font-size: 80%;
+  overflow-y: hidden;
 }
 
 input::placeholder { 
@@ -187,7 +173,7 @@ input::placeholder {
 }
 
 .info-container {
-  max-height: 40vh; /* or whatever fits your layout */
+  max-height: 50vh; /* or whatever fits your layout */
   overflow-y: auto;
   padding: 10px;
   color: white;
@@ -195,18 +181,21 @@ input::placeholder {
 
 .lla-display {
   margin-top: 10px;
+  margin-bottom: 10px;
   background-color: rgba(255, 255, 255, 0.05);
   padding: 20px;
   border-radius: 10px;
   width: 250px
 }
 
-.visibility-display {
+.lla-display h3 {
   margin-top: 10px;
-  background-color: rgba(255, 255, 255, 0.05);
-  padding: 20px;
-  border-radius: 10px;
-  width: 250px
+  margin-bottom: 20px;
+}
+
+.lla-display p {
+  margin-top: 5px;
+  margin-bottom: 10px;
 }
 
 .message-box {
