@@ -82,6 +82,11 @@ public class SatelliteController {
             response.put("tle", satellite.getTle());
 
             SatelliteData updatedSatellite = satellitePositionService.getCurrentLLA(noradId);
+            if (updatedSatellite == null) {
+                System.err.printf("Failed to update geodetic coordinates for satellite %d\n", noradId);
+                response.put("error", "Failed to update geodetic coordinates.");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            }
             response.put("currentLLA", updatedSatellite.getGeodeticCoordinates());
 
             SatelliteData xyzUpdatedSatellite = satellitePositionService.getXYZ(updatedSatellite.getSatid());
