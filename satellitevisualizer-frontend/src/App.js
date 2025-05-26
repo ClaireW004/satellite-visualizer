@@ -20,13 +20,16 @@ const App = () => {
     const [error, setError] = useState("");
     const [submitted, setSubmitted] = useState(false);
     const [visibilityResult, setVisibilityResult] = useState("");
+    const [error1, setError1] = useState('');
+    const [error2, setError2] = useState('');
+
 
     const viewerRef = useRef(null);
 
-    const fetchTLEandLLA = async (noradId, setLLA) => {
+    const fetchTLEandLLA = async (noradId, setLLA, setError) => {
         try {
             let response = await axios.get(`http://localhost:8080/api/satellite/${noradId}/tle`);
-            console.log(response.data);
+            console.log("Response", response.data);
 
             const llaArray = response.data.currentLLA;
             console.log("lla array ", llaArray);
@@ -64,11 +67,11 @@ const App = () => {
                     setTle(response.data.tle);
                     setError('');
                 } catch (fetchErr) {
-                    setError('Failed to fetch and save new TLE data.');
+                    setError('Satellite does not exist or is not currently in orbit.');
                     console.error(fetchErr);
                 }
             } else {
-                setError('Failed to fetch TLE data. Satellite not found or server error.');
+                setError('Satellite does not exist or is not currently in orbit.');
                 console.error(err);
             }
         }
@@ -99,8 +102,8 @@ const App = () => {
                     console.log("Cleared Cesium viewer");
                 }
 
-                await fetchTLEandLLA(parsedId1, setCurrentLLA1);
-                await fetchTLEandLLA(parsedId2, setCurrentLLA2);
+                await fetchTLEandLLA(parsedId1, setCurrentLLA1, setError1);
+                await fetchTLEandLLA(parsedId2, setCurrentLLA2, setError2);
                 console.log("LLAs updated");
 
                 const res1 = await fetch(`http://localhost:8080/api/satellite/${parsedId1}/czml`);
@@ -208,6 +211,7 @@ const App = () => {
                                 <div>
                                     <button
                                         onClick={() => {
+                                            if (error1 === 'Satellite does not exist or is not currently in orbit.') return;
                                             const viewer = viewerRef.current?.cesiumElement;
                                             if (viewer && isLLAValid(currentLLA1)) {
                                                 viewer.camera.flyTo({
@@ -234,14 +238,21 @@ const App = () => {
                                     >
                                         <b>Satellite {submittedNorad1 || '1'}</b>
                                     </button><br />
-                                    Lat: {currentLLA1.latitude}<br />
-                                    Lon: {currentLLA1.longitude}<br />
-                                    Alt: {currentLLA1.altitude} km
+                                    {error1 ? (
+                                        <p style={{ color: 'red' }}>{error1}</p>
+                                    ) : currentLLA1 ? (
+                                        <>
+                                            Lat: {currentLLA1.latitude}<br />
+                                            Lon: {currentLLA1.longitude}<br />
+                                            Alt: {currentLLA1.altitude} km
+                                        </>
+                                    ) : null}
                                 </div>
                                 <br />
                                 <div>
                                     <button
                                         onClick={() => {
+                                            if (error2 === 'Satellite does not exist or is not currently in orbit.') return;
                                             const viewer = viewerRef.current?.cesiumElement;
                                             if (viewer && isLLAValid(currentLLA2)) {
                                                 viewer.camera.flyTo({
@@ -268,19 +279,26 @@ const App = () => {
                                     >
                                         <b>Satellite {submittedNorad2 || '2'}</b>
                                     </button><br />
-                                    <p>
-                                        Lat: {currentLLA2.latitude}<br />
-                                        Lon: {currentLLA2.longitude}<br />
-                                        Alt: {currentLLA2.altitude} km
-                                    </p>
-                                    <br></br>
+                                    {error2 ? (
+                                        <p style={{ color: 'red' }}>{error2}</p>
+                                    ) : currentLLA2 ? (
+                                        <>
+                                            Lat: {currentLLA2.latitude}<br />
+                                            Lon: {currentLLA2.longitude}<br />
+                                            Alt: {currentLLA2.altitude} km
+                                        </>
+                                    ) : null}
+                                    <br />
+                                    <br />
                                     <h3>Visibility Result</h3>
                                     <p>
-                                        {visibilityResult === 'Visibility: true'
-                                            ? 'These satellites are currently visible to each other.'
-                                            : visibilityResult === 'Visibility: false'
-                                                ? 'These satellites are not currently visible to each other.'
-                                                : visibilityResult}
+                                        {(error1 === 'Satellite does not exist or is not currently in orbit.' || error2 === 'Satellite does not exist or is not currently in orbit.')
+                                            ? 'Could not determine visibility result.'
+                                            : visibilityResult === 'Visibility: true'
+                                                ? 'These satellites are currently visible to each other.'
+                                                : visibilityResult === 'Visibility: false'
+                                                    ? 'These satellites are not currently visible to each other.'
+                                                    : visibilityResult}
                                     </p>
                                 </div>
                             </div>
