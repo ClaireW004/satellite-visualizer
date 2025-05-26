@@ -180,8 +180,14 @@ public class SatellitePositionService {
 
     public SatelliteData getCurrentLLA(int satId) {
         loadOrekitData();
-        return fetchTLE(satId).map(tle -> computeLLA(tle, satId)).orElse(null);
-    }
+        Optional<TLE> optionalTLE = fetchTLE(satId);
+
+        if (optionalTLE.isEmpty()) {
+            System.err.println("TLE data not found for satellite ID: " + satId);
+            return null;
+        }
+
+        return computeLLA(optionalTLE.get(), satId);    }
 
     /**
      * Computes the latitude, longitude, and altitude of a satellite based on its TLE data.
@@ -407,6 +413,7 @@ public class SatellitePositionService {
         double dx = x2 - x1;
         double dy = y2 - y1;
         double dz = z2 - z1;
+        System.out.println("dx: " + dx + " dy: " + dy + " dz: " + dz);
         double distance = FastMath.sqrt(dx * dx + dy * dy + dz * dz);
 
         double x_dot = dx / distance;
@@ -464,7 +471,11 @@ public class SatellitePositionService {
                     satelliteRepository.save(satellite);
 
                     System.out.printf("updated for satellite %d\n", satId);
-                    getCurrentLLA(satId);
+                    SatelliteData updatedSatellite = getCurrentLLA(satId);
+                    if (updatedSatellite == null) {
+                        System.err.printf("Failed to update geodetic coordinates for satellite %d\n", satId);
+                        continue;
+                    }
                     getXYZ(satId);
                 }
             } catch (Exception e) {
