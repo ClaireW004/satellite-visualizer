@@ -10,8 +10,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.teamtech.satellitevisualizer.models.SatelliteData;
 import com.teamtech.satellitevisualizer.repository.SatelliteRepository;
+import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.hipparchus.ode.events.Action;
 import org.hipparchus.util.FastMath;
+import org.orekit.bodies.BodyShape;
 import org.orekit.bodies.GeodeticPoint;
 import org.orekit.bodies.OneAxisEllipsoid;
 import org.orekit.data.DataContext;
@@ -245,6 +247,11 @@ public class SatellitePositionService {
         }
     }
 
+    private static final BodyShape EARTH = new OneAxisEllipsoid(
+            Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
+            Constants.WGS84_EARTH_FLATTENING,
+            FramesFactory.getITRF(IERSConventions.IERS_2010, true));
+
     /**
      * Computes the cartesian coordinates of a satellite based on its geodetic coordinates.
      * @param satId The satellite norad ID.
@@ -257,39 +264,31 @@ public class SatellitePositionService {
         if (satelliteData == null) return null;
 
         List<List<Double>> coords = satelliteData.getGeodeticCoordinates();
+        System.out.println("Geodetic Coordinates: " + coords);
+        Vector3D cartesianPoint = new Vector3D(0, 0, 0); // Initialize to zero vector
 
         if (coords != null && !coords.isEmpty() && coords.get(0).size() == 3) {
             // to be edited with the specific current / future coords
             latitude = coords.get(0).get(0);
             longitude = coords.get(0).get(1);
             altitudeKm = coords.get(0).get(2);
+
+            double latitudeRad = Math.toRadians(latitude);
+            double longitudeRad = Math.toRadians(longitude);
+            double altitudeMeters = altitudeKm * 1000;
+
+            System.out.println("Latitude: " + latitude + ", Longitude: " + longitude + ", Altitude (km): " + altitudeKm);
+            GeodeticPoint geodeticPoint = new GeodeticPoint(latitudeRad, longitudeRad, altitudeMeters);
+
+            // Transform the GeodeticPoint to a Cartesian point
+            cartesianPoint = EARTH.transform(geodeticPoint);
         }
 
-        // (L, L, A) -> (x, y, z)
-        var cosLat = FastMath.cos(latitude * FastMath.PI / 180.0);
-        var sinLat = FastMath.sin(latitude * FastMath.PI / 180.0);
-        var cosLon = FastMath.cos(longitude * FastMath.PI / 180.0);
-        var sinLon = FastMath.sin(longitude * FastMath.PI / 180.0);
-        var rad = 6378137.0;
-//        var f = 1.0 / 298.257224;
-        // flattening factor for using an ellipsoidal model of Earth
-        var f = parseEccentricity(getLine2(satelliteData.getTle()));
-        // used to compute the normal radius at the given latitude
-        var C = 1.0 / FastMath.sqrt(cosLat * cosLat + (1 - f) * (1 - f) * sinLat * sinLat);
-        // adjust the height for the vertical (z) component
-        var S = (1.0 - f) * (1.0 - f) * C;
-        var h = altitudeKm;
-        // transform geodetic coordinates into ECEF coordinates
-//        double x = (rad * C + h) * cosLat * cosLon;
-//        double y = (rad * C + h) * cosLat * sinLon;
-//        double z = (rad * S + h) * sinLat;
-        double x = rad * cosLat * cosLon;
-        double y = rad * cosLat * sinLon;
-        double z = rad * sinLat;
+        double x = cartesianPoint.getX();
+        double y = cartesianPoint.getY();
+        double z = cartesianPoint.getZ();
 
-        System.out.printf("x: %.2f\n", x);
-        System.out.printf("y: %.2f\n", y);
-        System.out.printf("z: %.2f\n", z);
+        System.out.println("Cartesian Coordinates: (" + x + ", " + y + ", " + z + ")");
 
         List<List<Double>> coordinates = List.of(Arrays.asList(x, y, z));
         satelliteData.setXYZCoordinates(coordinates);
@@ -304,26 +303,15 @@ public class SatellitePositionService {
      * @return A list of Cartesian coordinates (x, y, z).
      */
     public List<Double> convertToCartesian(GeodeticPoint geodeticPoint) {
-        double a = Constants.WGS84_EARTH_EQUATORIAL_RADIUS; // semi-major axis
-        double f = Constants.WGS84_EARTH_FLATTENING;
-        double e2 = 2 * f - f * f; // first eccentricity squared
-
-        double lat = geodeticPoint.getLatitude();
-        double lon = geodeticPoint.getLongitude();
-        double alt = geodeticPoint.getAltitude();
-
-        double cosLat = FastMath.cos(lat);
-        double sinLat = FastMath.sin(lat);
-        double cosLon = FastMath.cos(lon);
-        double sinLon = FastMath.sin(lon);
-
-        double N = a / FastMath.sqrt(1 - e2 * sinLat * sinLat); // radius of curvature
-
-        double x = (N + alt) * cosLat * cosLon;
-        double y = (N + alt) * cosLat * sinLon;
-        double z = ((1 - e2) * N + alt) * sinLat;
-
-        return new ArrayList<>(List.of(0D, x, y, z));
+        Vector3D cartesianPoint = new Vector3D(0, 0, 0);
+        if (geodeticPoint != null) {
+            cartesianPoint = EARTH.transform(geodeticPoint);
+        }
+        double x = cartesianPoint.getX();
+        double y = cartesianPoint.getY();
+        double z = cartesianPoint.getZ();
+        System.out.println("Converted Cartesian Coordinates: (" + x + ", " + y + ", " + z + ")");
+        return new ArrayList<>(List.of(0D, x, y, z)); // 0D is a placeholder for time, can be replaced with actual time if needed
     }
 
     /**
@@ -415,10 +403,12 @@ public class SatellitePositionService {
         double dz = z2 - z1;
         System.out.println("dx: " + dx + " dy: " + dy + " dz: " + dz);
         double distance = FastMath.sqrt(dx * dx + dy * dy + dz * dz);
+        System.out.println("distance: " + distance);
 
         double x_dot = dx / distance;
         double y_dot = dy / distance;
         double z_dot = dz / distance;
+        System.out.printf("x_dot: %.2f, y_dot: %.2f, z_dot: %.2f\n", x_dot, y_dot, z_dot);
 
         double earthRadius = 6378137.0;
         double step = 10000; // in meters
@@ -428,10 +418,13 @@ public class SatellitePositionService {
             double x = x1 + x_dot * i;
             double y = y1 + y_dot * i;
             double z = z1 + z_dot * i;
+            System.out.printf("x: %.2f, y: %.2f, z: %.2f\n", x, y, z);
 
             double r = FastMath.sqrt(x * x + y * y + z * z);
+            System.out.printf("r: %.2f\n", r);
 
             if (r <= earthRadius) {
+                System.out.println("smaller than earth radius: " + r);
                 visible = false;
                 System.out.println("satellites cannot see each other at time: " + hour + ":" + minute + ":" + second);
                 break;
